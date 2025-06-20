@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>用户信息 - Auth Service</title>
+    <link href="/css/auth.css" rel="stylesheet">
+    <style>
+        .profile-container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .profile-card {
+            background: white;
+            border-radius: 12px;
+            padding: 40px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+        
+        .success-icon {
+            width: 64px;
+            height: 64px;
+            background: #10b981;
+            border-radius: 50%;
+            margin: 0 auto 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 32px;
+            color: white;
+        }
+        
+        .profile-actions {
+            margin-top: 30px;
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        
+        .btn-secondary {
+            padding: 10px 20px;
+            background: #f3f4f6;
+            color: #374151;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            text-decoration: none;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-secondary:hover {
+            background: #e5e7eb;
+            border-color: #9ca3af;
+        }
+        
+        .token-info {
+            margin-top: 30px;
+            padding: 20px;
+            background: #f8fafc;
+            border-radius: 8px;
+            text-align: left;
+        }
+        
+        .token-info h3 {
+            margin-bottom: 10px;
+            color: #374151;
+            font-size: 16px;
+        }
+        
+        .token-info p {
+            color: #6b7280;
+            font-size: 14px;
+            line-height: 1.5;
+            margin-bottom: 15px;
+        }
+        
+        .integration-example {
+            background: #1f2937;
+            color: #f9fafb;
+            padding: 15px;
+            border-radius: 6px;
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 12px;
+            white-space: pre-wrap;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="profile-container">
+        <div class="profile-card">
+            <div class="success-icon">
+                ✓
+            </div>
+            
+            <h1>认证成功！</h1>
+            <p>您已成功登录 Auth Service 统一认证平台</p>
+            
+            <div style="margin: 20px 0; padding: 15px; background: #e0f2fe; border: 1px solid #0284c7; border-radius: 8px; color: #0c4a6e;">
+                <strong>🔄 标准 OAuth 流程：</strong> 
+                <p style="margin: 8px 0;">正常情况下，用户登录成功后会被<strong>直接跳转</strong>到原始请求的页面，符合 OAuth 2.0 标准。</p>
+                <p style="margin: 8px 0;"><strong>您看到此页面是因为：</strong></p>
+                <ul style="margin: 5px 0 0 20px; text-align: left;">
+                    <li>您直接访问了登录页面（没有来源应用）</li>
+                    <li>您正在测试认证服务</li>
+                    <li>需要查看集成示例</li>
+                </ul>
+            </div>
+            
+            <div class="profile-actions">
+                <a href="/auth/profile" class="btn-secondary">查看 API 文档</a>
+                <a href="/api/docs" class="btn-secondary">Swagger 文档</a>
+                <a href="/auth/logout" class="btn-secondary">退出登录</a>
+            </div>
+            
+            <div class="token-info">
+                <h3>🔧 集成说明</h3>
+                <p>恭喜！您已成功登录 Auth Service。您的应用现在可以使用 JWT Token 进行身份验证。</p>
+                
+                <p><strong>前端集成示例：</strong></p>
+                <div class="integration-example">// 检测登录状态
+if (!localStorage.getItem('jwt_token')) {
+  // 跳转到统一登录页
+  window.location.href = 'https://auth.yourdomain.com/login?redirect=' + 
+    encodeURIComponent(window.location.href);
+}
+
+// 使用 Token 调用 API
+fetch('/api/user/profile', {
+  headers: {
+    'Authorization': 'Bearer ' + localStorage.getItem('jwt_token')
+  }
+})</div>
+                
+                <p><strong>后端验证示例：</strong></p>
+                <div class="integration-example">// 验证 JWT Token
+curl -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+     https://auth.yourdomain.com/auth/profile
+
+// 获取 JWKS 公钥（用于验证 JWT）
+curl https://auth.yourdomain.com/.well-known/jwks.json</div>
+            </div>
+        </div>
+        
+        <div class="auth-footer" style="margin-top: 20px;">
+            <p>&copy; 2025 Auth Service. 统一认证平台</p>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>登录 - Auth Service</title>
+    <link href="/css/auth.css" rel="stylesheet">
+</head>
+<body>
+    <div class="auth-container">
+        <div class="auth-card">
+            <div class="auth-header">
+                <h1>登录</h1>
+                <p>使用您的账户登录</p>
+            </div>
+
+            {{#if error}}
+            <div class="alert alert-error">
+                {{error}}
+            </div>
+            {{/if}}
+
+            <form method="POST" action="/login" class="auth-form">
+                <input type="hidden" name="redirect" value="{{redirect}}">
+                
+                <div class="form-group">
+                    <label for="email">邮箱地址</label>
+                    <input 
+                        type="email" 
+                        id="email" 
+                        name="email" 
+                        required 
+                        placeholder="请输入邮箱地址"
+                        value="{{email}}"
+                    >
+                </div>
+
+                <div class="form-group">
+                    <label for="password">密码</label>
+                    <input 
+                        type="password" 
+                        id="password" 
+                        name="password" 
+                        required 
+                        placeholder="请输入密码"
+                    >
+                </div>
+
+                <div class="form-group">
+                    <button type="submit" class="btn-primary">登录</button>
+                </div>
+
+                <div class="auth-links">
+                    <a href="/register{{#if redirect}}?redirect={{redirect}}{{/if}}">还没有账户？立即注册</a>
+                    <a href="/forgot-password">忘记密码？</a>
+                </div>
+            </form>
+
+            {{#if redirect}}
+            <div class="redirect-info">
+                <p>登录成功后将跳转至：<code>{{redirect}}</code></p>
+            </div>
+            {{/if}}
+        </div>
+
+        <div class="auth-footer">
+            <p>&copy; 2025 Auth Service. 统一认证平台</p>
+        </div>
+    </div>
+</body>
+</html>

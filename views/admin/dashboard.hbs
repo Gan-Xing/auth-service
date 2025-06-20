@@ -1,0 +1,147 @@
+{{!< layout/admin}}
+
+<!-- 统计卡片 -->
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-value">{{stats.totalTenants}}</div>
+        <div class="stat-label">总租户数</div>
+        <div class="stat-change positive">+2 本月</div>
+    </div>
+    
+    <div class="stat-card success">
+        <div class="stat-value">{{stats.totalUsers}}</div>
+        <div class="stat-label">总用户数</div>
+        <div class="stat-change positive">+15 本周</div>
+    </div>
+    
+    <div class="stat-card warning">
+        <div class="stat-value">{{stats.todayLogins}}</div>
+        <div class="stat-label">今日登录</div>
+        <div class="stat-change positive">+12%</div>
+    </div>
+    
+    <div class="stat-card">
+        <div class="stat-value">{{stats.todayRegistrations}}</div>
+        <div class="stat-label">今日注册</div>
+        <div class="stat-change positive">+3 今日</div>
+    </div>
+</div>
+
+<!-- 系统状态和最近活动 -->
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
+    <!-- 系统健康状态 -->
+    <div class="card">
+        <div class="card-header">
+            <h3>系统状态</h3>
+            <p>各服务组件运行状态</p>
+        </div>
+        <div class="card-body">
+            <div style="display: flex; flex-direction: column; gap: 16px;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <span>数据库</span>
+                    <span class="status {{stats.systemHealth.database}}">
+                        <span class="status-dot"></span>
+                        {{#if (eq stats.systemHealth.database 'healthy')}}正常{{else}}异常{{/if}}
+                    </span>
+                </div>
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <span>邮件服务</span>
+                    <span class="status {{stats.systemHealth.email}}">
+                        <span class="status-dot"></span>
+                        {{#if (eq stats.systemHealth.email 'healthy')}}正常{{else}}异常{{/if}}
+                    </span>
+                </div>
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <span>缓存服务</span>
+                    <span class="status {{stats.systemHealth.cache}}">
+                        <span class="status-dot"></span>
+                        {{#if (eq stats.systemHealth.cache 'healthy')}}正常{{else if (eq stats.systemHealth.cache 'warning')}}警告{{else}}异常{{/if}}
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 最近活动 -->
+    <div class="card">
+        <div class="card-header">
+            <h3>最近活动</h3>
+            <p>用户登录和注册活动</p>
+        </div>
+        <div class="card-body">
+            <div style="display: flex; flex-direction: column; gap: 16px;">
+                {{#each stats.recentActivity}}
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px; background: var(--bg-secondary); border-radius: var(--border-radius);">
+                    <div>
+                        <div style="font-weight: 500; color: var(--text-primary);">
+                            {{#if (eq type 'login')}}
+                                🔐 用户登录
+                            {{else if (eq type 'registration')}}
+                                👤 用户注册
+                            {{else}}
+                                📝 {{type}}
+                            {{/if}}
+                        </div>
+                        <div style="font-size: 12px; color: var(--text-muted);">
+                            {{user}} - {{tenant}}
+                        </div>
+                    </div>
+                    <div style="font-size: 12px; color: var(--text-muted);">
+                        {{formatDate timestamp}}
+                    </div>
+                </div>
+                {{/each}}
+            </div>
+        </div>
+        <div class="card-footer">
+            <a href="/admin/logs" class="btn btn-secondary btn-sm">查看所有日志</a>
+        </div>
+    </div>
+</div>
+
+<!-- 快速操作 -->
+<div class="card" style="margin-top: 24px;">
+    <div class="card-header">
+        <h3>快速操作</h3>
+        <p>常用的管理功能</p>
+    </div>
+    <div class="card-body">
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px;">
+            <a href="/admin/tenants/new" class="btn btn-primary">
+                <svg style="width: 16px; height: 16px;" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd"></path>
+                </svg>
+                创建新租户
+            </a>
+            
+            <a href="/admin/users" class="btn btn-secondary">
+                <svg style="width: 16px; height: 16px;" fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z"></path>
+                </svg>
+                管理用户
+            </a>
+            
+            <a href="/admin/settings" class="btn btn-secondary">
+                <svg style="width: 16px; height: 16px;" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clip-rule="evenodd"></path>
+                </svg>
+                系统配置
+            </a>
+            
+            <a href="/admin/logs" class="btn btn-secondary">
+                <svg style="width: 16px; height: 16px;" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M3 3a1 1 0 011-1h12a1 1 0 011 1v3a1 1 0 01-.293.707L12 11.414V15a1 1 0 01-.293.707l-2 2A1 1 0 018 17v-5.586L3.293 6.707A1 1 0 013 6V3z" clip-rule="evenodd"></path>
+                </svg>
+                查看日志
+            </a>
+        </div>
+    </div>
+</div>
+
+<script>
+// 页面加载完成后的初始化
+document.addEventListener('DOMContentLoaded', function() {
+    // 可以在这里添加图表初始化等逻辑
+    console.log('仪表板加载完成');
+});
+</script>

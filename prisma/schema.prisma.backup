@@ -1,0 +1,324 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = "postgresql://postgres:Meiting1.@100.67.31.64:5432/remotejobs"
+}
+
+model ExchangeRate {
+  id        String   @id
+  date      DateTime @default(now())
+  rates     Json
+  createdAt DateTime @default(now())
+  updatedAt DateTime
+
+  @@index([date])
+}
+
+model Job {
+  id                  String    @id
+  jobId               String    @unique
+  title               String
+  company             String
+  location            String?
+  description         String?
+  url                 String    @unique
+  salary              String?
+  postedAt            DateTime?
+  postedText          String?
+  applicantsCount     String?
+  descriptionFallback String?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime
+  searchCount         Int       @default(1)
+  lastSearchedAt      DateTime  @default(now())
+  employmentType      String?
+  industries          String?
+  isRemote            Boolean   @default(true)
+  jobFunction         String?
+  seniority           String?
+  salaryNumeric       Float?
+  refId               String?
+  companyUrl          String?
+}
+
+model JobClean {
+  id                   String              @id
+  jobId                String              @unique
+  refId                String?
+  jobUrl               String
+  title                String
+  titleClass           String?
+  companyName          String?
+  companyId            String?
+  companyUrl           String?
+  country              String?             @db.Char(2)
+  region               String?
+  city                 String?
+  lat                  Float?
+  lng                  Float?
+  salaryMin            Int?
+  salaryMax            Int?
+  salaryCurrency       SalaryCurrency?
+  salaryPeriod         SalaryPeriod?
+  salaryUsdYearMin     Float?
+  salaryUsdYearMax     Float?
+  postedAt             DateTime?
+  applicantsCount      Int?
+  applicantsIsCapped   Boolean             @default(false)
+  platform             String              @default("linkedin")
+  workplaceType        WorkplaceType       @default(ON_SITE)
+  employmentType       EmploymentType
+  seniority            Seniority?
+  experienceCategory   ExperienceCategory?
+  jobFunction          String?
+  industries           String?
+  educationRequired    EducationLevel?
+  mandatoryTech        String[]
+  niceToHaveTech       String[]
+  softSkills           String[]
+  certificatesRequired String[]
+  benefits             String[]
+  languages            String[]
+  timezoneRestriction  Int[]
+  description          String?
+  createdAt            DateTime            @default(now())
+  updatedAt            DateTime
+}
+
+model SearchConfig {
+  configType String
+  configData Json
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime
+  id         String   @id
+  userId     String
+
+  @@unique([userId, configType])
+}
+
+model TaskProgress {
+  id           String   @id @default("current")
+  geoIndex     Int
+  keywordIndex Int
+  step         Int
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime
+}
+
+enum EducationLevel {
+  NONE
+  HIGH_SCHOOL
+  BACHELOR
+  MASTER
+  PHD
+}
+
+enum EmploymentType {
+  FULL_TIME
+  CONTRACT
+  PART_TIME
+  TEMPORARY
+  INTERNSHIP
+  VOLUNTEER
+  OTHER
+}
+
+enum ExperienceCategory {
+  Y0_1
+  Y1_3
+  Y3_5
+  Y5P
+}
+
+enum SalaryCurrency {
+  USD
+  AED
+  AFN
+  ALL
+  AMD
+  ANG
+  AOA
+  ARS
+  AUD
+  AWG
+  AZN
+  BAM
+  BBD
+  BDT
+  BGN
+  BHD
+  BIF
+  BMD
+  BND
+  BOB
+  BRL
+  BSD
+  BTN
+  BWP
+  BYN
+  BZD
+  CAD
+  CDF
+  CHF
+  CLP
+  CNY
+  COP
+  CRC
+  CUP
+  CVE
+  CZK
+  DJF
+  DKK
+  DOP
+  DZD
+  EGP
+  ERN
+  ETB
+  EUR
+  FJD
+  FKP
+  FOK
+  GBP
+  GEL
+  GGP
+  GHS
+  GIP
+  GMD
+  GNF
+  GTQ
+  GYD
+  HKD
+  HNL
+  HRK
+  HTG
+  HUF
+  IDR
+  ILS
+  IMP
+  INR
+  IQD
+  IRR
+  ISK
+  JEP
+  JMD
+  JOD
+  JPY
+  KES
+  KGS
+  KHR
+  KID
+  KMF
+  KRW
+  KWD
+  KYD
+  KZT
+  LAK
+  LBP
+  LKR
+  LRD
+  LSL
+  LYD
+  MAD
+  MDL
+  MGA
+  MKD
+  MMK
+  MNT
+  MOP
+  MRU
+  MUR
+  MVR
+  MWK
+  MXN
+  MYR
+  MZN
+  NAD
+  NGN
+  NIO
+  NOK
+  NPR
+  NZD
+  OMR
+  PAB
+  PEN
+  PGK
+  PHP
+  PKR
+  PLN
+  PYG
+  QAR
+  RON
+  RSD
+  RUB
+  RWF
+  SAR
+  SBD
+  SCR
+  SDG
+  SEK
+  SGD
+  SHP
+  SLE
+  SLL
+  SOS
+  SRD
+  SSP
+  STN
+  SYP
+  SZL
+  THB
+  TJS
+  TMT
+  TND
+  TOP
+  TRY
+  TTD
+  TVD
+  TWD
+  TZS
+  UAH
+  UGX
+  UYU
+  UZS
+  VES
+  VND
+  VUV
+  WST
+  XAF
+  XCD
+  XCG
+  XDR
+  XOF
+  XPF
+  YER
+  ZAR
+  ZMW
+  ZWL
+}
+
+enum SalaryPeriod {
+  YEAR
+  MONTH
+  WEEK
+  DAY
+  HOUR
+}
+
+enum Seniority {
+  ENTRY
+  ASSOCIATE
+  MID_SENIOR
+  DIRECTOR
+  EXECUTIVE
+  INTERNSHIP
+  NOT_APPLICABLE
+}
+
+enum WorkplaceType {
+  REMOTE
+  ON_SITE
+  HYBRID
+}

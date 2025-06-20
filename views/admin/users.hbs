@@ -1,0 +1,408 @@
+{{!< layout/admin}}
+
+<!-- 用户管理页面头部 -->
+<div class="page-header">
+    <h1>用户管理</h1>
+    <div class="page-actions">
+        <button class="btn btn-primary" onclick="showCreateUserModal()">
+            <i class="icon-plus"></i> 添加用户
+        </button>
+        <button class="btn btn-secondary" onclick="exportUsers()">
+            <i class="icon-download"></i> 导出数据
+        </button>
+    </div>
+</div>
+
+<!-- 搜索和过滤 -->
+<div class="search-filters">
+    <div class="search-box">
+        <input type="text" placeholder="搜索邮箱或用户名..." id="userSearch">
+        <button type="button" class="btn btn-secondary">搜索</button>
+    </div>
+    <div class="filter-group">
+        <select id="tenantFilter">
+            <option value="">全部租户</option>
+            {{#each tenants}}
+            <option value="{{this.id}}">{{this.name}}</option>
+            {{/each}}
+        </select>
+        <select id="roleFilter">
+            <option value="">全部角色</option>
+            <option value="admin">管理员</option>
+            <option value="user">普通用户</option>
+        </select>
+        <select id="statusFilter">
+            <option value="">全部状态</option>
+            <option value="active">激活</option>
+            <option value="inactive">未激活</option>
+            <option value="suspended">已暂停</option>
+        </select>
+    </div>
+</div>
+
+<!-- 用户列表 -->
+<div class="table-container">
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>用户信息</th>
+                <th>租户</th>
+                <th>角色</th>
+                <th>状态</th>
+                <th>最后登录</th>
+                <th>注册时间</th>
+                <th>操作</th>
+            </tr>
+        </thead>
+        <tbody>
+            {{#each users}}
+            <tr>
+                <td>
+                    <div class="user-info">
+                        <div class="user-avatar">
+                            {{#if this.avatar}}
+                            <img src="{{this.avatar}}" alt="头像">
+                            {{else}}
+                            <div class="avatar-placeholder">{{substring this.email 0 1}}</div>
+                            {{/if}}
+                        </div>
+                        <div class="user-details">
+                            <strong>{{this.username}}</strong>
+                            <small>{{this.email}}</small>
+                        </div>
+                    </div>
+                </td>
+                <td>
+                    <span class="tenant-badge">{{this.tenant.name}}</span>
+                </td>
+                <td>
+                    <span class="role-badge role-{{this.role}}">
+                        {{#if (eq this.role 'admin')}}管理员{{/if}}
+                        {{#if (eq this.role 'user')}}普通用户{{/if}}
+                    </span>
+                </td>
+                <td>
+                    <span class="status-badge status-{{this.status}}">
+                        {{#if (eq this.status 'active')}}激活{{/if}}
+                        {{#if (eq this.status 'inactive')}}未激活{{/if}}
+                        {{#if (eq this.status 'suspended')}}已暂停{{/if}}
+                    </span>
+                </td>
+                <td>
+                    {{#if this.lastLoginAt}}
+                    {{formatDate this.lastLoginAt}}
+                    {{else}}
+                    <span class="text-muted">从未登录</span>
+                    {{/if}}
+                </td>
+                <td>{{formatDate this.createdAt}}</td>
+                <td>
+                    <div class="action-buttons">
+                        <button class="btn btn-sm btn-secondary" onclick="viewUser('{{this.id}}')">查看</button>
+                        <button class="btn btn-sm btn-primary" onclick="editUser('{{this.id}}')">编辑</button>
+                        {{#if (eq this.status 'active')}}
+                        <button class="btn btn-sm btn-warning" onclick="suspendUser('{{this.id}}')">暂停</button>
+                        {{else}}
+                        <button class="btn btn-sm btn-success" onclick="activateUser('{{this.id}}')">激活</button>
+                        {{/if}}
+                        <button class="btn btn-sm btn-info" onclick="resetPassword('{{this.id}}')">重置密码</button>
+                        <button class="btn btn-sm btn-danger" onclick="deleteUser('{{this.id}}')">删除</button>
+                    </div>
+                </td>
+            </tr>
+            {{/each}}
+        </tbody>
+    </table>
+</div>
+
+<!-- 分页 -->
+<div class="pagination">
+    <div class="pagination-info">
+        显示 {{pagination.start}} - {{pagination.end}} 条，共 {{pagination.total}} 条
+    </div>
+    <div class="pagination-controls">
+        {{#if pagination.hasPrev}}
+        <a href="?page={{pagination.prevPage}}" class="btn btn-sm btn-secondary">上一页</a>
+        {{/if}}
+        
+        {{#each pagination.pages}}
+        <a href="?page={{this.number}}" class="btn btn-sm {{#if this.current}}btn-primary{{else}}btn-secondary{{/if}}">
+            {{this.number}}
+        </a>
+        {{/each}}
+        
+        {{#if pagination.hasNext}}
+        <a href="?page={{pagination.nextPage}}" class="btn btn-sm btn-secondary">下一页</a>
+        {{/if}}
+    </div>
+</div>
+
+<!-- 创建用户模态框 -->
+<div id="createUserModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>添加用户</h3>
+            <button class="modal-close" onclick="hideCreateUserModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+            <form id="createUserForm">
+                <div class="form-group">
+                    <label for="userEmail">邮箱 *</label>
+                    <input type="email" id="userEmail" name="email" required>
+                </div>
+                <div class="form-group">
+                    <label for="userName">用户名 *</label>
+                    <input type="text" id="userName" name="username" required>
+                </div>
+                <div class="form-group">
+                    <label for="userPassword">密码 *</label>
+                    <input type="password" id="userPassword" name="password" required>
+                    <small>至少8位，包含字母和数字</small>
+                </div>
+                <div class="form-group">
+                    <label for="userTenant">所属租户 *</label>
+                    <select id="userTenant" name="tenantId" required>
+                        <option value="">请选择租户</option>
+                        {{#each tenants}}
+                        <option value="{{this.id}}">{{this.name}}</option>
+                        {{/each}}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="userRole">角色 *</label>
+                    <select id="userRole" name="role" required>
+                        <option value="user">普通用户</option>
+                        <option value="admin">管理员</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="userPhone">手机号</label>
+                    <input type="tel" id="userPhone" name="phone">
+                </div>
+                <div class="form-group">
+                    <label>
+                        <input type="checkbox" id="sendWelcomeEmail" name="sendWelcomeEmail" checked>
+                        发送欢迎邮件
+                    </label>
+                </div>
+            </form>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" onclick="hideCreateUserModal()">取消</button>
+            <button type="button" class="btn btn-primary" onclick="createUser()">创建</button>
+        </div>
+    </div>
+</div>
+
+<!-- 重置密码模态框 -->
+<div id="resetPasswordModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>重置密码</h3>
+            <button class="modal-close" onclick="hideResetPasswordModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+            <form id="resetPasswordForm">
+                <input type="hidden" id="resetUserId" name="userId">
+                <div class="form-group">
+                    <label for="newPassword">新密码 *</label>
+                    <input type="password" id="newPassword" name="newPassword" required>
+                    <small>至少8位，包含字母和数字</small>
+                </div>
+                <div class="form-group">
+                    <label for="confirmPassword">确认密码 *</label>
+                    <input type="password" id="confirmPassword" name="confirmPassword" required>
+                </div>
+                <div class="form-group">
+                    <label>
+                        <input type="checkbox" id="sendPasswordEmail" name="sendPasswordEmail" checked>
+                        发送密码重置邮件给用户
+                    </label>
+                </div>
+            </form>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" onclick="hideResetPasswordModal()">取消</button>
+            <button type="button" class="btn btn-primary" onclick="doResetPassword()">重置</button>
+        </div>
+    </div>
+</div>
+
+<script>
+// 用户管理相关的JavaScript函数
+function showCreateUserModal() {
+    document.getElementById('createUserModal').style.display = 'block';
+}
+
+function hideCreateUserModal() {
+    document.getElementById('createUserModal').style.display = 'none';
+    document.getElementById('createUserForm').reset();
+}
+
+function createUser() {
+    const form = document.getElementById('createUserForm');
+    const formData = new FormData(form);
+    
+    fetch('/admin/users', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(Object.fromEntries(formData))
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            hideCreateUserModal();
+            location.reload();
+        } else {
+            alert('创建失败：' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('创建失败，请重试');
+    });
+}
+
+function viewUser(userId) {
+    window.location.href = `/admin/users/${userId}`;
+}
+
+function editUser(userId) {
+    window.location.href = `/admin/users/${userId}/edit`;
+}
+
+function suspendUser(userId) {
+    if (confirm('确定要暂停这个用户吗？')) {
+        fetch(`/admin/users/${userId}/suspend`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('操作失败：' + data.message);
+            }
+        });
+    }
+}
+
+function activateUser(userId) {
+    if (confirm('确定要激活这个用户吗？')) {
+        fetch(`/admin/users/${userId}/activate`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('操作失败：' + data.message);
+            }
+        });
+    }
+}
+
+function resetPassword(userId) {
+    document.getElementById('resetUserId').value = userId;
+    document.getElementById('resetPasswordModal').style.display = 'block';
+}
+
+function hideResetPasswordModal() {
+    document.getElementById('resetPasswordModal').style.display = 'none';
+    document.getElementById('resetPasswordForm').reset();
+}
+
+function doResetPassword() {
+    const form = document.getElementById('resetPasswordForm');
+    const formData = new FormData(form);
+    const data = Object.fromEntries(formData);
+    
+    if (data.newPassword !== data.confirmPassword) {
+        alert('密码确认不匹配');
+        return;
+    }
+    
+    fetch(`/admin/users/${data.userId}/reset-password`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            newPassword: data.newPassword,
+            sendEmail: data.sendPasswordEmail === 'on'
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            hideResetPasswordModal();
+            alert('密码重置成功');
+        } else {
+            alert('重置失败：' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('重置失败，请重试');
+    });
+}
+
+function deleteUser(userId) {
+    if (confirm('确定要删除这个用户吗？此操作不可恢复！')) {
+        fetch(`/admin/users/${userId}`, {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('删除失败：' + data.message);
+            }
+        });
+    }
+}
+
+function exportUsers() {
+    const tenantFilter = document.getElementById('tenantFilter').value;
+    const roleFilter = document.getElementById('roleFilter').value;
+    const statusFilter = document.getElementById('statusFilter').value;
+    
+    const params = new URLSearchParams();
+    if (tenantFilter) params.set('tenantId', tenantFilter);
+    if (roleFilter) params.set('role', roleFilter);
+    if (statusFilter) params.set('status', statusFilter);
+    
+    window.open(`/admin/users/export?${params.toString()}`);
+}
+
+// 搜索功能
+document.getElementById('userSearch').addEventListener('keyup', function(e) {
+    if (e.key === 'Enter') {
+        const searchTerm = this.value;
+        const tenantFilter = document.getElementById('tenantFilter').value;
+        const roleFilter = document.getElementById('roleFilter').value;
+        const statusFilter = document.getElementById('statusFilter').value;
+        
+        const params = new URLSearchParams();
+        if (searchTerm) params.set('search', searchTerm);
+        if (tenantFilter) params.set('tenantId', tenantFilter);
+        if (roleFilter) params.set('role', roleFilter);
+        if (statusFilter) params.set('status', statusFilter);
+        
+        window.location.search = params.toString();
+    }
+});
+</script>

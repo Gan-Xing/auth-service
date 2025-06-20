@@ -1,0 +1,125 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Tenant {
+  id          String   @id @default(uuid())
+  name        String
+  domain      String?  @unique // 可选的自定义域名
+  apiKey      String   @unique @default(uuid())
+  isActive    Boolean  @default(true)
+  
+  // 时间戳
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // 关联表
+  users       User[]
+  apiKeys     ApiKey[]
+  
+  @@map("tenants")
+}
+
+model ApiKey {
+  id          String   @id @default(uuid())
+  tenantId    String
+  name        String   // API Key 名称描述
+  keyHash     String   @unique // API Key 的哈希值
+  permissions String[] // 权限列表，如 ["auth:read", "auth:write"]
+  isActive    Boolean  @default(true)
+  expiresAt   DateTime?
+  lastUsedAt  DateTime?
+  
+  // 时间戳
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // 关联
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  
+  @@map("api_keys")
+}
+
+model User {
+  id          Int      @id @default(autoincrement())
+  tenantId    String   // 多租户支持
+  email       String
+  username    String?
+  firstName   String?
+  lastName    String?
+  password    String
+  phoneNumber String?
+  country     String?
+  
+  // 认证相关
+  hashedRt    String?  // 刷新token的哈希值
+  isActive    Boolean  @default(true)
+  isVerified  Boolean  @default(false)
+  
+  // 第三方登录
+  wechatId    String?
+  unionId     String?
+  
+  // 时间戳
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  lastLoginAt DateTime?
+
+  // 关联表
+  tenant      Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  sessions    UserSession[]
+  
+  // 复合唯一约束：同一租户内邮箱唯一
+  @@unique([tenantId, email])
+  @@unique([tenantId, username])
+  @@unique([tenantId, wechatId])
+  @@unique([tenantId, unionId])
+  @@map("users")
+}
+
+model UserSession {
+  id           String   @id @default(uuid())
+  userId       Int
+  accessToken  String   @unique
+  refreshToken String   @unique
+  device       String?
+  userAgent    String?
+  ip           String?
+  expiresAt    DateTime
+  isActive     Boolean  @default(true)
+  
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  
+  // 关联
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@map("user_sessions")
+}
+
+model VerificationCode {
+  id        String   @id @default(uuid())
+  type      VerificationCodeType // EMAIL, SMS
+  target    String   // 邮箱或手机号
+  code      String
+  token     String   @unique // 验证token
+  expiresAt DateTime
+  isUsed    Boolean  @default(false)
+  
+  createdAt DateTime @default(now())
+  
+  @@map("verification_codes")
+}
+
+enum VerificationCodeType {
+  EMAIL
+  SMS
+}

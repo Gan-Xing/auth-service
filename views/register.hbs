@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>注册 - Auth Service</title>
+    <link href="/css/auth.css" rel="stylesheet">
+</head>
+<body>
+    <div class="auth-container">
+        <div class="auth-card">
+            <div class="auth-header">
+                <h1>注册账户</h1>
+                <p>创建您的新账户</p>
+            </div>
+
+            {{#if error}}
+            <div class="alert alert-error">
+                {{error}}
+            </div>
+            {{/if}}
+
+            <form method="POST" action="/register" class="auth-form">
+                <input type="hidden" name="redirect" value="{{redirect}}">
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="firstName">姓</label>
+                        <input 
+                            type="text" 
+                            id="firstName" 
+                            name="firstName" 
+                            required 
+                            placeholder="请输入姓"
+                            value="{{firstName}}"
+                        >
+                    </div>
+                    <div class="form-group">
+                        <label for="lastName">名</label>
+                        <input 
+                            type="text" 
+                            id="lastName" 
+                            name="lastName" 
+                            required 
+                            placeholder="请输入名"
+                            value="{{lastName}}"
+                        >
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="email">邮箱地址</label>
+                    <input 
+                        type="email" 
+                        id="email" 
+                        name="email" 
+                        required 
+                        placeholder="请输入邮箱地址"
+                        value="{{email}}"
+                    >
+                </div>
+
+                <div class="form-group">
+                    <label for="password">密码</label>
+                    <input 
+                        type="password" 
+                        id="password" 
+                        name="password" 
+                        required 
+                        placeholder="请输入密码（至少8位）"
+                    >
+                    <small class="form-help">密码须包含字母、数字，至少8位</small>
+                </div>
+
+                <div class="form-group">
+                    <label for="confirmPassword">确认密码</label>
+                    <input 
+                        type="password" 
+                        id="confirmPassword" 
+                        name="confirmPassword" 
+                        required 
+                        placeholder="请再次输入密码"
+                    >
+                </div>
+
+                <div class="form-group">
+                    <button type="submit" class="btn-primary">注册账户</button>
+                </div>
+
+                <div class="auth-links">
+                    <a href="/login{{#if redirect}}?redirect={{redirect}}{{/if}}">已有账户？立即登录</a>
+                </div>
+            </form>
+
+            {{#if redirect}}
+            <div class="redirect-info">
+                <p>注册成功后将跳转至：<code>{{redirect}}</code></p>
+            </div>
+            {{/if}}
+        </div>
+
+        <div class="auth-footer">
+            <p>&copy; 2025 Auth Service. 统一认证平台</p>
+        </div>
+    </div>
+
+    <script>
+        // 密码确认验证
+        document.getElementById('confirmPassword').addEventListener('input', function() {
+            const password = document.getElementById('password').value;
+            const confirmPassword = this.value;
+            
+            if (password !== confirmPassword) {
+                this.setCustomValidity('密码不匹配');
+            } else {
+                this.setCustomValidity('');
+            }
+        });
+    </script>
+</body>
+</html>
