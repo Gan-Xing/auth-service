@@ -24,6 +24,9 @@ model Tenant {
   // 关联表
   users       User[]
   apiKeys     ApiKey[]
+  auditLogs   AuditLog[]
+  metrics     SystemMetric[]
+  alerts      Alert[]
   
   @@map("tenants")
 }
@@ -76,6 +79,9 @@ model User {
   // 关联表
   tenant      Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   sessions    UserSession[]
+  oauthAccounts OAuthAccount[]
+  auditLogs   AuditLog[]
+  metrics     SystemMetric[]
   
   // 复合唯一约束：同一租户内邮箱唯一
   @@unique([tenantId, email])
@@ -122,4 +128,265 @@ model VerificationCode {
 enum VerificationCodeType {
   EMAIL
   SMS
+}
+
+model OAuthAccount {
+  id           String   @id @default(uuid())
+  userId       Int
+  provider     String   // github, google, wechat, etc.
+  providerId   String   // 第三方平台的用户ID
+  username     String?  // 第三方平台的用户名
+  avatar       String?  // 头像URL
+  accessToken  String?  // 访问令牌
+  refreshToken String?  // 刷新令牌
+  
+  // 时间戳
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  lastLoginAt  DateTime?
+  
+  // 关联
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // 复合唯一约束：一个用户对于同一个提供商只能有一个账户
+  @@unique([userId, provider])
+  // 一个第三方账户只能关联一个用户
+  @@unique([provider, providerId])
+  @@map("oauth_accounts")
+}
+
+model AuditLog {
+  id          String    @id @default(uuid())
+  tenantId    String    // 租户ID
+  userId      Int?      // 用户ID（可选，系统操作时为空）
+  
+  // 操作信息
+  action      AuditAction    // 操作类型
+  resource    String         // 操作的资源类型（如 "user", "tenant", "apikey"）
+  resourceId  String?        // 资源ID
+  
+  // 详细信息
+  description String         // 操作描述
+  details     Json?          // 详细数据（JSON格式）
+  
+  // 请求信息
+  ip          String?        // 用户IP地址
+  userAgent   String?        // 用户代理
+  method      String?        // HTTP方法
+  path        String?        // 请求路径
+  
+  // 结果信息
+  success     Boolean        // 操作是否成功
+  errorCode   String?        // 错误代码（如有）
+  errorMessage String?       // 错误消息（如有）
+  
+  // 时间戳
+  createdAt   DateTime @default(now())
+  
+  // 关联
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user        User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  
+  // 索引优化
+  @@index([tenantId, createdAt])
+  @@index([userId, createdAt])
+  @@index([action, createdAt])
+  @@index([resource, resourceId])
+  @@map("audit_logs")
+}
+
+enum AuditAction {
+  // 认证相关
+  AUTH_LOGIN_SUCCESS
+  AUTH_LOGIN_FAILED
+  AUTH_LOGOUT
+  AUTH_REGISTER
+  AUTH_PASSWORD_RESET_REQUEST
+  AUTH_PASSWORD_RESET_SUCCESS
+  AUTH_PASSWORD_CHANGE
+  AUTH_EMAIL_VERIFICATION
+  AUTH_OAUTH_LOGIN
+  
+  // 用户管理
+  USER_CREATE
+  USER_UPDATE
+  USER_DELETE
+  USER_ACTIVATE
+  USER_DEACTIVATE
+  USER_ROLE_CHANGE
+  
+  // 租户管理
+  TENANT_CREATE
+  TENANT_UPDATE
+  TENANT_DELETE
+  TENANT_ACTIVATE
+  TENANT_DEACTIVATE
+  
+  // API Key 管理
+  APIKEY_CREATE
+  APIKEY_UPDATE
+  APIKEY_DELETE
+  APIKEY_REGENERATE
+  
+  // 管理员操作
+  ADMIN_ACCESS
+  ADMIN_CONFIG_CHANGE
+  ADMIN_USER_IMPERSONATE
+  
+  // 系统操作
+  SYSTEM_BACKUP
+  SYSTEM_RESTORE
+  SYSTEM_MAINTENANCE
+  
+  // 安全事件
+  SECURITY_BREACH_ATTEMPT
+  SECURITY_SUSPICIOUS_ACTIVITY
+  SECURITY_RATE_LIMIT_EXCEEDED
+}
+
+model SystemMetric {
+  id          String   @id @default(uuid())
+  
+  // 指标信息
+  metricType  MetricType    // 指标类型
+  name        String        // 指标名称
+  value       Float         // 指标值
+  unit        String?       // 单位 (ms, %, MB, count)
+  
+  // 上下文信息
+  tenantId    String?       // 租户ID (可选)
+  userId      Int?          // 用户ID (可选)
+  endpoint    String?       // API端点
+  method      String?       // HTTP方法
+  
+  // 详细数据
+  metadata    Json?         // 额外的元数据
+  tags        String[]      // 标签，用于分组查询
+  
+  // 时间戳
+  timestamp   DateTime @default(now())
+  
+  // 关联
+  tenant      Tenant?  @relation(fields: [tenantId], references: [id], onDelete: SetNull)
+  user        User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  
+  // 索引优化
+  @@index([metricType, timestamp])
+  @@index([tenantId, timestamp])
+  @@index([name, timestamp])
+  @@index([tags, timestamp])
+  @@map("system_metrics")
+}
+
+model Alert {
+  id          String     @id @default(uuid())
+  
+  // 告警信息
+  alertType   AlertType      // 告警类型
+  severity    AlertSeverity  // 严重程度
+  title       String         // 告警标题
+  message     String         // 告警消息
+  
+  // 触发信息
+  triggerValue    Float?     // 触发值
+  thresholdValue  Float?     // 阈值
+  
+  // 上下文信息
+  tenantId    String?        // 租户ID
+  endpoint    String?        // 相关端点
+  ip          String?        // 相关IP
+  
+  // 详细数据
+  details     Json?          // 详细信息
+  stackTrace  String?        // 错误堆栈 (如果适用)
+  
+  // 处理状态
+  status      AlertStatus @default(OPEN)
+  resolvedAt  DateTime?
+  resolvedBy  String?        // 解决人员
+  resolution  String?        // 解决方案描述
+  
+  // 通知状态
+  emailSent   Boolean @default(false)
+  webhookSent Boolean @default(false)
+  notifiedAt  DateTime?
+  
+  // 时间戳
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // 关联
+  tenant      Tenant?  @relation(fields: [tenantId], references: [id], onDelete: SetNull)
+  
+  // 索引优化
+  @@index([alertType, createdAt])
+  @@index([severity, status])
+  @@index([tenantId, createdAt])
+  @@index([status, createdAt])
+  @@map("alerts")
+}
+
+enum MetricType {
+  // 性能指标
+  RESPONSE_TIME
+  DATABASE_QUERY_TIME
+  REDIS_OPERATION_TIME
+  CPU_USAGE
+  MEMORY_USAGE
+  DISK_USAGE
+  
+  // 业务指标
+  REQUEST_COUNT
+  ERROR_RATE
+  LOGIN_SUCCESS
+  LOGIN_FAILURE
+  REGISTRATION_COUNT
+  
+  // 系统指标
+  ACTIVE_CONNECTIONS
+  QUEUE_SIZE
+  CACHE_HIT_RATE
+  
+  // 安全指标
+  FAILED_LOGIN_ATTEMPTS
+  SUSPICIOUS_ACTIVITY
+  BLOCKED_IPS
+}
+
+enum AlertType {
+  // 性能告警
+  HIGH_RESPONSE_TIME
+  HIGH_ERROR_RATE
+  HIGH_CPU_USAGE
+  HIGH_MEMORY_USAGE
+  LOW_DISK_SPACE
+  
+  // 业务告警
+  HIGH_FAILED_LOGINS
+  UNUSUAL_TRAFFIC
+  SERVICE_UNAVAILABLE
+  
+  // 安全告警
+  BRUTE_FORCE_ATTACK
+  SUSPICIOUS_ACTIVITY
+  UNAUTHORIZED_ACCESS
+  
+  // 系统告警
+  DATABASE_CONNECTION_ERROR
+  REDIS_CONNECTION_ERROR
+  EXTERNAL_SERVICE_ERROR
+}
+
+enum AlertSeverity {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum AlertStatus {
+  OPEN
+  ACKNOWLEDGED
+  RESOLVED
+  SUPPRESSED
 }

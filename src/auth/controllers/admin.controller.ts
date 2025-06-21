@@ -179,33 +179,27 @@ export class AdminController {
   /**
    * 审计日志页面
    */
-  @Get('logs')
+  @Get('audit-logs')
   @UseGuards(AdminGuard)
-  @Render('admin/logs')
+  @Render('admin/audit-logs')
   @ApiOperation({ summary: '审计日志页面' })
-  async logsPage(
-    @Query('page') page: string = '1',
-    @Query('type') type?: string,
-    @Query('date') date?: string,
-  ) {
-    const pageNum = parseInt(page, 10) || 1;
-    const pageSize = 50;
-
-    // 获取日志列表
-    const logs = await this.getAuditLogs(pageNum, pageSize, type, date);
-    
+  async auditLogsPage() {
     return {
       title: '审计日志 - Auth Service 管理后台',
-      logs,
-      filters: {
-        type,
-        date,
-      },
-      pagination: {
-        current: pageNum,
-        total: logs.total,
-        pageSize,
-      },
+      currentPage: 'audit-logs',
+    };
+  }
+
+  /**
+   * 审计日志页面（旧路由兼容）
+   */
+  @Get('logs')
+  @UseGuards(AdminGuard)
+  @Render('admin/audit-logs')
+  @ApiOperation({ summary: '审计日志页面（兼容）' })
+  async logsPage() {
+    return {
+      title: '审计日志 - Auth Service 管理后台',
       currentPage: 'logs',
     };
   }

@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>登录失败 - Auth Service</title>
+    <link href="/css/auth.css" rel="stylesheet">
+    <style>
+        .error-icon {
+            width: 64px;
+            height: 64px;
+            margin: 0 auto 20px;
+            display: block;
+            color: #ef4444;
+        }
+        
+        .error-message {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .error-message h1 {
+            color: #ef4444;
+            margin-bottom: 10px;
+        }
+        
+        .error-details {
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 20px;
+            text-align: left;
+        }
+        
+        .error-details h3 {
+            color: #dc2626;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+        
+        .error-details p {
+            color: #7f1d1d;
+            font-size: 13px;
+            margin: 0;
+        }
+        
+        .retry-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        
+        .btn-secondary {
+            padding: 12px 20px;
+            background: #6b7280;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            text-decoration: none;
+            text-align: center;
+            font-size: 14px;
+            font-weight: 500;
+            transition: background 0.3s ease;
+        }
+        
+        .btn-secondary:hover {
+            background: #4b5563;
+        }
+    </style>
+</head>
+<body>
+    <div class="auth-container">
+        <div class="auth-card">
+            <svg class="error-icon" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+            </svg>
+            
+            <div class="error-message">
+                <h1>登录失败</h1>
+                <p>第三方登录过程中出现了问题</p>
+            </div>
+
+            <div class="error-details">
+                <h3>错误详情</h3>
+                <p id="error-description">未知错误，请稍后重试</p>
+            </div>
+
+            <div class="retry-buttons">
+                <a href="/login" class="btn-primary">返回登录页面</a>
+                <a href="/register" class="btn-secondary">注册新账户</a>
+            </div>
+        </div>
+
+        <div class="auth-footer">
+            <p>&copy; 2025 Auth Service. 统一认证平台</p>
+        </div>
+    </div>
+
+    <script>
+        // 解析错误参数并显示相应信息
+        function parseError() {
+            const params = new URLSearchParams(window.location.search);
+            const error = params.get('error');
+            const errorDescription = params.get('error_description');
+            
+            const errorElement = document.getElementById('error-description');
+            
+            switch (error) {
+                case 'access_denied':
+                    errorElement.textContent = '您拒绝了授权请求。如需继续，请重新尝试并允许应用访问您的账户信息。';
+                    break;
+                case 'invalid_request':
+                    errorElement.textContent = '无效的登录请求。请检查登录链接是否正确。';
+                    break;
+                case 'no_user_data':
+                    errorElement.textContent = '无法获取您的账户信息。请确保您的第三方账户已设置公开邮箱地址。';
+                    break;
+                case 'oauth_callback_failed':
+                    errorElement.textContent = '登录过程中发生服务器错误。请稍后重试。';
+                    break;
+                case 'server_error':
+                    errorElement.textContent = '服务器内部错误。我们已收到通知，请稍后重试。';
+                    break;
+                default:
+                    if (errorDescription) {
+                        errorElement.textContent = decodeURIComponent(errorDescription);
+                    } else if (error) {
+                        errorElement.textContent = `错误代码: ${error}`;
+                    }
+                    break;
+            }
+        }
+
+        // 页面加载后解析错误信息
+        window.addEventListener('load', parseError);
+    </script>
+</body>
+</html>

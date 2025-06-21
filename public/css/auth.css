@@ -233,3 +233,108 @@ body {
     0% { transform: rotate(0deg); }
     100% { transform: rotate(360deg); }
 }
+
+/* OAuth 登录样式 */
+.oauth-divider {
+    position: relative;
+    text-align: center;
+    margin: 30px 0 20px;
+}
+
+.oauth-divider::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: #e5e7eb;
+    z-index: 1;
+}
+
+.oauth-divider span {
+    background: white;
+    padding: 0 20px;
+    color: #6b7280;
+    font-size: 14px;
+    position: relative;
+    z-index: 2;
+}
+
+.oauth-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-bottom: 20px;
+}
+
+.btn-oauth {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 12px 20px;
+    border: 2px solid #e5e7eb;
+    border-radius: 8px;
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.btn-oauth:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.btn-oauth.github {
+    color: #24292e;
+    background: #ffffff;
+    border-color: #d0d7de;
+}
+
+.btn-oauth.github:hover {
+    background: #f6f8fa;
+    border-color: #24292e;
+}
+
+.btn-oauth.google {
+    color: #3c4043;
+    background: #ffffff;
+    border-color: #dadce0;
+}
+
+.btn-oauth.google:hover {
+    background: #f8f9fa;
+    border-color: #3c4043;
+}
+
+.oauth-icon {
+    width: 20px;
+    height: 20px;
+    margin-right: 12px;
+    flex-shrink: 0;
+}
+
+.btn-oauth.github .oauth-icon {
+    fill: #24292e;
+}
+
+/* 响应式 OAuth 按钮 */
+@media (max-width: 480px) {
+    .oauth-buttons {
+        gap: 10px;
+    }
+    
+    .btn-oauth {
+        padding: 10px 16px;
+        font-size: 13px;
+    }
+    
+    .oauth-icon {
+        width: 18px;
+        height: 18px;
+        margin-right: 10px;
+    }
+}

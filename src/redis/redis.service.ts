@@ -170,6 +170,14 @@ export class RedisService implements OnModuleDestroy {
     await this.client.del(key);
   }
 
+  async incr(key: string): Promise<number> {
+    return await this.client.incr(key);
+  }
+
+  async expire(key: string, seconds: number): Promise<number> {
+    return await this.client.expire(key, seconds);
+  }
+
   async exists(key: string): Promise<boolean> {
     const result = await this.client.exists(key);
     return result === 1;

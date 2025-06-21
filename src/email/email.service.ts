@@ -133,4 +133,27 @@ export class EmailService {
       return false;
     }
   }
+
+  /**
+   * 发送通用邮件
+   */
+  async sendEmail(to: string, subject: string, content: string): Promise<boolean> {
+    try {
+      const emailConfig = this.configService.get('email');
+
+      const mailOptions = {
+        from: emailConfig.from,
+        to,
+        subject,
+        html: content,
+      };
+
+      await this.transporter.sendMail(mailOptions);
+      this.logger.log(`邮件已发送至: ${to}`);
+      return true;
+    } catch (error) {
+      this.logger.error(`发送邮件失败: ${error.message}`);
+      return false;
+    }
+  }
 }

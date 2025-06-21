@@ -6,9 +6,18 @@ import { AuthModule } from './auth/auth.module';
 import { DatabaseModule } from './database/database.module';
 import { CommonModule } from './common/common.module';
 import { RedisModule } from './redis/redis.module';
+import { AuditModule } from './audit/audit.module';
+import { SmsModule } from './sms/sms.module';
+import { MonitoringModule } from './monitoring/monitoring.module';
+import { FeatureFlagsModule } from './feature-flags/feature-flags.module';
+import { PerformanceModule } from './performance/performance.module';
+import { DocumentationModule } from './documentation/documentation.module';
 import { AdminAuthMiddleware } from './auth/middleware/admin-auth.middleware';
+import { MonitoringMiddleware } from './monitoring/monitoring.middleware';
 import { GlobalExceptionFilter } from './common/filters/global-exception.filter';
 import { ResponseInterceptor } from './common/interceptors/response.interceptor';
+import { AuditInterceptor } from './audit/interceptors/audit.interceptor';
+import { MonitoringInterceptor } from './monitoring/monitoring.interceptor';
 import configuration from './config/configuration';
 
 @Module({
@@ -42,6 +51,12 @@ import configuration from './config/configuration';
     CommonModule,
     DatabaseModule,
     RedisModule,
+    AuditModule,
+    SmsModule,
+    MonitoringModule,
+    FeatureFlagsModule,
+    PerformanceModule,
+    DocumentationModule,
     AuthModule,
   ],
   controllers: [],
@@ -61,10 +76,24 @@ import configuration from './config/configuration';
       provide: APP_INTERCEPTOR,
       useClass: ResponseInterceptor,
     },
+    // 全局审计拦截器
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: AuditInterceptor,
+    },
+    // 全局监控拦截器
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: MonitoringInterceptor,
+    },
   ],
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
+    consumer
+      .apply(MonitoringMiddleware)
+      .forRoutes('*'); // 监控所有路由
+
     consumer
       .apply(AdminAuthMiddleware)
       .forRoutes('admin/*');

@@ -22,6 +22,7 @@ import { RedisService } from '../redis/redis.service';
 import { PasswordService } from './services/password.service';
 import { VerificationService } from './services/verification.service';
 import { EmailService } from '../email/email.service';
+import { AuditService } from '../audit/audit.service';
 import jwtDecode from 'jwt-decode';
 import {
   LoginDto,
@@ -42,6 +43,7 @@ export class AuthService {
     private readonly passwordService: PasswordService,
     private readonly verificationService: VerificationService,
     private readonly emailService: EmailService,
+    private readonly auditService: AuditService,
     private readonly configService: ConfigService,
   ) {}
 
@@ -78,6 +80,15 @@ export class AuthService {
       if (!user) {
         await this.redisService.incrementLoginAttempts(loginIdentifier);
         this.logger.warn(`登录失败 - 用户不存在: ${email}`, { email, tenantId });
+        
+        // 记录登录失败审计日志
+        await this.auditService.logAuthFailure(
+          tenantId || 'default',
+          email,
+          '用户不存在',
+          'USER_NOT_FOUND'
+        );
+        
         throw new AuthException('邮箱或密码错误', 401, 'INVALID_CREDENTIALS');
       }
 
@@ -97,6 +108,15 @@ export class AuthService {
       if (!isPasswordValid) {
         await this.redisService.incrementLoginAttempts(loginIdentifier);
         this.logger.warn(`登录失败 - 密码错误: ${email}`, { email, userId: user.id });
+        
+        // 记录登录失败审计日志
+        await this.auditService.logAuthFailure(
+          user.tenantId,
+          email,
+          '密码错误',
+          'INVALID_PASSWORD'
+        );
+        
         throw new AuthException('邮箱或密码错误', 401, 'INVALID_CREDENTIALS');
       }
 
@@ -110,6 +130,13 @@ export class AuthService {
       });
 
       this.logger.log(`用户登录成功: ${email}`, { email, userId: user.id, tenantId: user.tenantId });
+
+      // 记录登录成功审计日志
+      await this.auditService.logAuthSuccess(
+        user.tenantId,
+        user.id,
+        'password'
+      );
 
       // 生成tokens
       const tokens = await this.generateTokens({ userId: user.id });
@@ -202,6 +229,9 @@ export class AuthService {
 
     // 更新refresh token哈希
     await this.updateRefreshTokenHash(user.id, tokens.refreshToken);
+
+    // 记录用户注册审计日志
+    await this.auditService.logUserRegister(tenantId, user.id, email);
 
     // 发送欢迎邮件
     try {
@@ -500,7 +530,7 @@ export class AuthService {
   /**
    * 生成访问和刷新Token
    */
-  private async generateTokens(payload: { userId: number }): Promise<TokenResponseDto> {
+  async generateTokens(payload: { userId: number }): Promise<TokenResponseDto> {
     const jwtConfig = this.configService.get('jwt');
     const tokenId = `${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
     

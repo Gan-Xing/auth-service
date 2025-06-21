@@ -1,11 +1,11 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe, Logger } from '@nestjs/common';
-import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { join } from 'path';
 import helmet from 'helmet';
 import { AppModule } from './app.module';
 import { CustomValidationPipe } from './common/pipes/validation.pipe';
+import { setupSwagger } from './documentation/swagger.config';
 
 async function bootstrap() {
   const logger = new Logger('Bootstrap');
@@ -55,18 +55,8 @@ async function bootstrap() {
     maxAge: 86400, // 24 hours
   });
 
-  // 设置Swagger文档
-  const config = new DocumentBuilder()
-    .setTitle('Auth Service API')
-    .setDescription('独立的认证服务 - 支持用户注册/登录/JWT等')
-    .setVersion('1.0')
-    .addBearerAuth()
-    .addTag('auth', '认证相关接口')
-    .addTag('users', '用户相关接口')
-    .build();
-
-  const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('api/docs', app, document);
+  // 设置增强的Swagger文档
+  setupSwagger(app);
 
   const port = process.env.PORT || 3001;
   await app.listen(port);

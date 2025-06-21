@@ -1,0 +1,5 @@
+# 国际短信服务依赖
+@vonage/server-sdk       # Vonage (原 Nexmo) SDK
+twilio                   # Twilio SDK  
+aws-sdk                  # AWS SNS SDK
+libphonenumber-js        # 手机号码验证和格式化
