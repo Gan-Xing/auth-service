@@ -56,6 +56,6 @@ import { EmailService } from '../email/email.service';
     AdminGuard,
     EmailService,
   ],
-  exports: [AuthService, TenantService, ApiKeyGuard],
+  exports: [AuthService, TenantService, UsersService, AdminGuard, ApiKeyGuard],
 })
 export class AuthModule {}

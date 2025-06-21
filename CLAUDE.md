@@ -277,6 +277,10 @@ SMTP_HOST="smtp.gmail.com"
 SMTP_USER="your-email@gmail.com"
 SMTP_PASS="your-app-password"
 
+# 管理员配置 (新增)
+ADMIN_EMAIL="admin@auth-service.com"
+ADMIN_PASSWORD="strong-password"
+
 # 短信配置 (可选)
 VONAGE_API_KEY="your-vonage-key"
 VONAGE_API_SECRET="your-vonage-secret"
@@ -331,7 +335,7 @@ cp .env.example .env
 npx prisma generate
 
 # 运行数据库迁移
-npx prisma migrate dev
+npx prisma migrate deploy
 
 # (可选) 填充种子数据
 npm run db:seed
@@ -339,7 +343,20 @@ npm run db:seed
 
 ### 3. 启动服务
 
+#### 使用 Docker Compose（推荐）
 ```bash
+# 启动所有服务
+docker-compose up -d
+
+# 查看日志
+docker-compose logs -f auth-service
+```
+
+#### 使用外部数据库
+```bash
+# 如果使用外部 PostgreSQL，只需启动 Redis
+docker-compose up -d redis
+
 # 开发模式
 npm run start:dev
 
@@ -352,7 +369,24 @@ npm run start:prod
 
 - **API文档**: http://localhost:3001/api/docs
 - **管理后台**: http://localhost:3001/admin
+  - 默认账号: `admin@auth-service.com`
+  - 默认密码: 见 `.env` 文件配置
 - **健康检查**: http://localhost:3001/monitoring/health
+
+### 5. 常见问题
+
+#### 视图文件未找到
+如果遇到 "Failed to lookup view" 错误：
+```bash
+# 复制视图文件到 dist 目录
+cp -r views dist/
+```
+
+#### 管理员密码重置
+如果需要重置管理员密码，可以：
+1. 在 `.env` 中设置 `ADMIN_PASSWORD`
+2. 重启服务
+3. 或使用数据库直接更新（需要 bcrypt 加密）
 
 ## 🛠️ 开发指南
 
@@ -404,6 +438,22 @@ docker run -d \
   auth-service:latest
 ```
 
+### Docker Compose 部署
+
+```bash
+# 使用外部数据库时，修改 docker-compose.yml
+# 注释掉 postgres 服务，修改 DATABASE_URL
+
+# 启动服务
+docker-compose up -d
+
+# 查看状态
+docker-compose ps
+
+# 查看日志
+docker-compose logs -f
+```
+
 ### 生产环境注意事项
 
 1. **安全配置**
@@ -411,18 +461,30 @@ docker run -d \
    - 配置 HTTPS
    - 设置防火墙规则
    - 启用 IP 白名单
+   - 定期更新依赖
 
 2. **性能优化**
    - 配置 Redis 集群
    - 数据库读写分离
    - CDN 加速静态资源
    - 负载均衡配置
+   - 启用 HTTP/2
 
 3. **监控运维**
    - 设置告警通知
    - 配置日志收集
    - 性能监控
    - 备份策略
+   - 健康检查配置
+
+4. **部署检查清单**
+   - ✅ 环境变量配置正确
+   - ✅ 数据库迁移已执行
+   - ✅ Redis 连接正常
+   - ✅ 视图文件已复制到 dist
+   - ✅ 管理员账户已配置
+   - ✅ SSL 证书已配置
+   - ✅ 监控告警已设置
 
 ## 📈 项目价值
 
@@ -467,6 +529,39 @@ docker run -d \
 - 🔧 **定制**: 完全可控和扩展
 - 🛡️ **安全**: 数据完全自主可控
 - 📈 **性能**: 针对性优化，无外部依赖
+
+---
+
+## 🔧 故障排除
+
+### 常见问题
+
+1. **Monitoring middleware error**
+   - 错误信息: `Cannot read properties of undefined (reading 'recordApiRequest')`
+   - 解决方案: 这是一个已知的非致命错误，不影响服务运行
+
+2. **视图文件找不到**
+   - 错误信息: `Failed to lookup view "admin/login" in views directory`
+   - 解决方案:
+
+     ```bash
+     cp -r views dist/
+     ```
+
+3. **管理员无法登录**
+   - 检查 `.env` 中的 `ADMIN_EMAIL` 和 `ADMIN_PASSWORD`
+   - 确保数据库中存在 System 租户
+   - 使用 bcrypt 工具生成新的密码 hash
+
+4. **Redis 连接失败**
+   - 确保 Redis 服务正在运行
+   - 检查 Redis 连接配置
+   - 使用 `redis-cli ping` 测试连接
+
+5. **数据库迁移失败**
+   - 检查数据库连接字符串
+   - 确保数据库用户有足够权限
+   - 使用 `npx prisma migrate deploy` 而非 `migrate dev`
 
 ---
 

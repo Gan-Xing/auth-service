@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { ScheduleModule } from '@nestjs/schedule';
 import { MonitoringService } from './monitoring.service';
 import { AlertService } from './alert.service';
@@ -8,6 +8,7 @@ import { MonitoringInterceptor } from './monitoring.interceptor';
 import { DatabaseModule } from '../database/database.module';
 import { RedisModule } from '../redis/redis.module';
 import { EmailModule } from '../email/email.module';
+import { AuthModule } from '../auth/auth.module';
 
 @Module({
   imports: [
@@ -15,6 +16,7 @@ import { EmailModule } from '../email/email.module';
     DatabaseModule,
     RedisModule,
     EmailModule,
+    forwardRef(() => AuthModule),
   ],
   providers: [
     MonitoringService,

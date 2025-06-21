@@ -11,8 +11,7 @@ export class EmailServiceWithFeatureFlags {
   private readonly logger = new Logger(EmailServiceWithFeatureFlags.name);
 
   constructor(
-    private readonly featureFlagsService: FeatureFlagsService,
-    // private readonly emailService: EmailService, // 注入实际的邮件服务
+    private readonly featureFlagsService: FeatureFlagsService, // private readonly emailService: EmailService, // 注入实际的邮件服务
   ) {}
 
   /**
@@ -21,10 +20,10 @@ export class EmailServiceWithFeatureFlags {
   async sendVerificationCode(email: string, code: string, tenantId?: string): Promise<boolean> {
     // 检查邮件服务总开关
     const emailServiceEnabled = await this.featureFlagsService.isEnabled(
-      FeatureFlag.EMAIL_SERVICE, 
-      tenantId
+      FeatureFlag.EMAIL_SERVICE,
+      tenantId,
     );
-    
+
     if (!emailServiceEnabled) {
       this.logger.warn('Email service is disabled');
       return false;
@@ -33,9 +32,9 @@ export class EmailServiceWithFeatureFlags {
     // 检查验证码邮件开关
     const verificationEnabled = await this.featureFlagsService.isEnabled(
       FeatureFlag.EMAIL_VERIFICATION,
-      tenantId
+      tenantId,
     );
-    
+
     if (!verificationEnabled) {
       this.logger.warn('Email verification is disabled');
       return false;
@@ -59,9 +58,9 @@ export class EmailServiceWithFeatureFlags {
     // 检查欢迎邮件功能是否启用
     const welcomeEmailEnabled = await this.featureFlagsService.isEnabled(
       FeatureFlag.EMAIL_WELCOME,
-      tenantId
+      tenantId,
     );
-    
+
     if (!welcomeEmailEnabled) {
       this.logger.debug('Welcome email is disabled, skipping');
       return; // 静默跳过，不影响主流程
@@ -81,9 +80,7 @@ export class EmailServiceWithFeatureFlags {
 export class AuthServiceWithFeatureFlags {
   private readonly logger = new Logger(AuthServiceWithFeatureFlags.name);
 
-  constructor(
-    private readonly featureFlagsService: FeatureFlagsService,
-  ) {}
+  constructor(private readonly featureFlagsService: FeatureFlagsService) {}
 
   /**
    * 用户注册 - 带功能开关控制
@@ -92,9 +89,9 @@ export class AuthServiceWithFeatureFlags {
     // 检查用户注册功能是否启用
     const registrationEnabled = await this.featureFlagsService.isEnabled(
       FeatureFlag.USER_REGISTRATION,
-      tenantId
+      tenantId,
     );
-    
+
     if (!registrationEnabled) {
       throw new Error('用户注册功能当前不可用');
     }
@@ -105,9 +102,9 @@ export class AuthServiceWithFeatureFlags {
     // 检查是否需要邮箱验证
     const emailVerificationRequired = await this.featureFlagsService.isEnabled(
       FeatureFlag.REGISTRATION_EMAIL_VERIFICATION,
-      tenantId
+      tenantId,
     );
-    
+
     if (emailVerificationRequired) {
       await this.sendEmailVerification(user.email, tenantId);
     }
@@ -160,9 +157,7 @@ export class AuthServiceWithFeatureFlags {
 export class MonitoringServiceWithFeatureFlags {
   private readonly logger = new Logger(MonitoringServiceWithFeatureFlags.name);
 
-  constructor(
-    private readonly featureFlagsService: FeatureFlagsService,
-  ) {}
+  constructor(private readonly featureFlagsService: FeatureFlagsService) {}
 
   /**
    * 记录指标 - 带功能开关检查
@@ -171,9 +166,9 @@ export class MonitoringServiceWithFeatureFlags {
     // 检查监控功能是否启用
     const monitoringEnabled = await this.featureFlagsService.isEnabled(
       FeatureFlag.MONITORING_ENABLED,
-      tenantId
+      tenantId,
     );
-    
+
     if (!monitoringEnabled) {
       return; // 静默跳过
     }
@@ -181,9 +176,9 @@ export class MonitoringServiceWithFeatureFlags {
     // 检查指标收集是否启用
     const metricsEnabled = await this.featureFlagsService.isEnabled(
       FeatureFlag.METRICS_COLLECTION,
-      tenantId
+      tenantId,
     );
-    
+
     if (!metricsEnabled) {
       return; // 静默跳过
     }
@@ -199,9 +194,9 @@ export class MonitoringServiceWithFeatureFlags {
     // 检查告警功能是否启用
     const alertsEnabled = await this.featureFlagsService.isEnabled(
       FeatureFlag.ALERTS_ENABLED,
-      tenantId
+      tenantId,
     );
-    
+
     if (!alertsEnabled) {
       this.logger.debug('Alerts disabled, skipping alert');
       return;
@@ -224,9 +219,9 @@ export class FeatureFlagHelper {
    */
   async areAllEnabled(flags: FeatureFlag[], tenantId?: string): Promise<boolean> {
     const results = await Promise.all(
-      flags.map(flag => this.featureFlagsService.isEnabled(flag, tenantId))
+      flags.map((flag) => this.featureFlagsService.isEnabled(flag, tenantId)),
     );
-    return results.every(enabled => enabled);
+    return results.every((enabled) => enabled);
   }
 
   /**
@@ -234,9 +229,9 @@ export class FeatureFlagHelper {
    */
   async isAnyEnabled(flags: FeatureFlag[], tenantId?: string): Promise<boolean> {
     const results = await Promise.all(
-      flags.map(flag => this.featureFlagsService.isEnabled(flag, tenantId))
+      flags.map((flag) => this.featureFlagsService.isEnabled(flag, tenantId)),
     );
-    return results.some(enabled => enabled);
+    return results.some((enabled) => enabled);
   }
 
   /**
@@ -244,14 +239,12 @@ export class FeatureFlagHelper {
    */
   async getEnabledFlags(flags: FeatureFlag[], tenantId?: string): Promise<FeatureFlag[]> {
     const results = await Promise.all(
-      flags.map(async flag => ({
+      flags.map(async (flag) => ({
         flag,
-        enabled: await this.featureFlagsService.isEnabled(flag, tenantId)
-      }))
+        enabled: await this.featureFlagsService.isEnabled(flag, tenantId),
+      })),
     );
-    
-    return results
-      .filter(result => result.enabled)
-      .map(result => result.flag);
+
+    return results.filter((result) => result.enabled).map((result) => result.flag);
   }
 }

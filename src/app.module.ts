@@ -51,13 +51,13 @@ import configuration from './config/configuration';
     CommonModule,
     DatabaseModule,
     RedisModule,
+    AuthModule,
     AuditModule,
     SmsModule,
     MonitoringModule,
     FeatureFlagsModule,
     PerformanceModule,
     DocumentationModule,
-    AuthModule,
   ],
   controllers: [],
   providers: [
@@ -76,11 +76,11 @@ import configuration from './config/configuration';
       provide: APP_INTERCEPTOR,
       useClass: ResponseInterceptor,
     },
-    // 全局审计拦截器
-    {
-      provide: APP_INTERCEPTOR,
-      useClass: AuditInterceptor,
-    },
+    // 全局审计拦截器 - 暂时禁用
+    // {
+    //   provide: APP_INTERCEPTOR,
+    //   useClass: AuditInterceptor,
+    // },
     // 全局监控拦截器
     {
       provide: APP_INTERCEPTOR,
