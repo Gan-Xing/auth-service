@@ -1,12 +1,12 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { DatabaseService } from '../../database/database.service';
+import { PrismaService } from '../../database/prisma.service';
 
 @Injectable()
 export class UsersService {
-  constructor(private database: DatabaseService) {}
+  constructor(private prisma: PrismaService) {}
 
-  async findOne(id: string) {
-    const user = await this.database.user.findUnique({
+  async findOne(id: number) {
+    const user = await this.prisma.user.findUnique({
       where: { id },
       include: {
         tenant: true,
@@ -20,8 +20,23 @@ export class UsersService {
     return user;
   }
 
-  async findByEmail(email: string) {
-    return this.database.user.findUnique({
+  async findByEmail(email: string, tenantId?: string) {
+    if (tenantId) {
+      return this.prisma.user.findUnique({
+        where: { 
+          tenantId_email: {
+            tenantId,
+            email,
+          }
+        },
+        include: {
+          tenant: true,
+        },
+      });
+    }
+    
+    // 如果没有tenantId，使用findFirst
+    return this.prisma.user.findFirst({
       where: { email },
       include: {
         tenant: true,
@@ -64,17 +79,17 @@ export class UsersService {
     }
 
     // 获取总数
-    const total = await this.database.user.count({ where });
+    const total = await this.prisma.user.count({ where });
 
     // 获取数据
-    const users = await this.database.user.findMany({
+    const users = await this.prisma.user.findMany({
       where,
       include: {
         tenant: {
           select: {
             id: true,
             name: true,
-            code: true,
+            domain: true,
           },
         },
       },
@@ -101,18 +116,23 @@ export class UsersService {
   async create(userData: {
     email: string;
     password: string;
-    firstName: string;
-    lastName: string;
+    firstName?: string;
+    lastName?: string;
     tenantId: string;
-    role?: string;
-    phone?: string;
+    username?: string;
+    phoneNumber?: string;
   }) {
-    return this.database.user.create({
+    return this.prisma.user.create({
       data: {
-        ...userData,
-        role: userData.role || 'user',
+        email: userData.email,
+        password: userData.password,
+        firstName: userData.firstName,
+        lastName: userData.lastName,
+        username: userData.username,
+        phoneNumber: userData.phoneNumber,
+        tenantId: userData.tenantId,
         isActive: true,
-        isEmailVerified: false,
+        isVerified: false,
       },
       include: {
         tenant: true,
@@ -120,15 +140,15 @@ export class UsersService {
     });
   }
 
-  async update(id: string, updateData: Partial<{
+  async update(id: number, updateData: Partial<{
     firstName: string;
     lastName: string;
-    phone: string;
-    role: string;
+    phoneNumber: string;
+    username: string;
     isActive: boolean;
-    isEmailVerified: boolean;
+    isVerified: boolean;
   }>) {
-    return this.database.user.update({
+    return this.prisma.user.update({
       where: { id },
       data: updateData,
       include: {
@@ -137,26 +157,26 @@ export class UsersService {
     });
   }
 
-  async updatePassword(id: string, hashedPassword: string) {
-    return this.database.user.update({
+  async updatePassword(id: number, hashedPassword: string) {
+    return this.prisma.user.update({
       where: { id },
       data: { password: hashedPassword },
     });
   }
 
-  async delete(id: string) {
+  async delete(id: number) {
     // 删除用户及相关数据
-    await this.database.$transaction([
+    await this.prisma.$transaction([
       // 删除用户会话
-      this.database.userSession.deleteMany({
+      this.prisma.userSession.deleteMany({
         where: { userId: id },
       }),
-      // 删除验证码
-      this.database.verificationCode.deleteMany({
-        where: { email: { in: [await this.getUserEmail(id)] } },
+      // 删除验证码（基于用户邮箱）
+      this.prisma.verificationCode.deleteMany({
+        where: { target: await this.getUserEmail(id) },
       }),
       // 删除用户
-      this.database.user.delete({
+      this.prisma.user.delete({
         where: { id },
       }),
     ]);
@@ -164,26 +184,26 @@ export class UsersService {
     return { success: true };
   }
 
-  async suspend(id: string) {
+  async suspend(id: number) {
     return this.update(id, { isActive: false });
   }
 
-  async activate(id: string) {
+  async activate(id: number) {
     return this.update(id, { isActive: true });
   }
 
   async getStats() {
     const [totalUsers, activeUsers, newUsersToday] = await Promise.all([
       // 总用户数
-      this.database.user.count(),
+      this.prisma.user.count(),
       
       // 活跃用户数
-      this.database.user.count({
+      this.prisma.user.count({
         where: { isActive: true },
       }),
       
       // 今日新增用户
-      this.database.user.count({
+      this.prisma.user.count({
         where: {
           createdAt: {
             gte: new Date(new Date().setHours(0, 0, 0, 0)),
@@ -211,22 +231,22 @@ export class UsersService {
     });
   }
 
-  async getUserSessions(userId: string) {
-    return this.database.userSession.findMany({
+  async getUserSessions(userId: number) {
+    return this.prisma.userSession.findMany({
       where: { userId },
       orderBy: { createdAt: 'desc' },
       take: 10,
     });
   }
 
-  async revokeUserSessions(userId: string) {
-    return this.database.userSession.deleteMany({
+  async revokeUserSessions(userId: number) {
+    return this.prisma.userSession.deleteMany({
       where: { userId },
     });
   }
 
-  private async getUserEmail(id: string): Promise<string> {
-    const user = await this.database.user.findUnique({
+  private async getUserEmail(id: number): Promise<string> {
+    const user = await this.prisma.user.findUnique({
       where: { id },
       select: { email: true },
     });

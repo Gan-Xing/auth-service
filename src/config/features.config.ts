@@ -31,25 +31,25 @@ export interface FeaturesConfig {
       endpoint?: string;
       apiKey?: string;
     };
-    
+
     // 速率限制服务
     rateLimiter: {
       enabled: boolean;
       endpoint?: string;
       defaultLimits: {
-        login: number;    // 每分钟登录次数
+        login: number; // 每分钟登录次数
         register: number; // 每分钟注册次数
         verification: number; // 每分钟验证码发送次数
       };
     };
-    
+
     // 配置服务
     configService: {
       enabled: boolean;
       endpoint?: string;
       refreshInterval: number; // 配置刷新间隔（秒）
     };
-    
+
     // 通知服务
     notificationService: {
       enabled: boolean;
@@ -60,7 +60,7 @@ export interface FeaturesConfig {
         webhook: boolean;
       };
     };
-    
+
     // Webhook 服务
     webhookService: {
       enabled: boolean;
@@ -76,24 +76,24 @@ export interface FeaturesConfig {
       enabled: boolean;
       required: boolean; // 是否强制验证
     };
-    
+
     // 会话管理
     sessionManagement: {
       enabled: boolean;
       maxSessions: number; // 每用户最大会话数
     };
-    
+
     // 审计日志
     auditLog: {
       enabled: boolean;
       events: string[]; // 要记录的事件
       retention: number; // 日志保留天数
     };
-    
+
     // API 限制
     apiLimits: {
       enabled: boolean;
-      perUser: number;   // 每用户每小时请求数
+      perUser: number; // 每用户每小时请求数
       perTenant: number; // 每租户每小时请求数
     };
   };

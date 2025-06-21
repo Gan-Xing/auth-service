@@ -4,10 +4,21 @@ import {
   ConflictException,
   NotFoundException,
   BadRequestException,
+  Logger,
 } from '@nestjs/common';
+import {
+  AuthException,
+  ValidationException,
+  BusinessException,
+  DatabaseException,
+  RedisException,
+  TokenException,
+  TenantException,
+} from '../common/exceptions/auth.exceptions';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../database/prisma.service';
+import { RedisService } from '../redis/redis.service';
 import { PasswordService } from './services/password.service';
 import { VerificationService } from './services/verification.service';
 import { EmailService } from '../email/email.service';
@@ -22,8 +33,11 @@ import {
 
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
+
   constructor(
     private readonly prisma: PrismaService,
+    private readonly redisService: RedisService,
     private readonly jwtService: JwtService,
     private readonly passwordService: PasswordService,
     private readonly verificationService: VerificationService,
@@ -36,49 +50,82 @@ export class AuthService {
    */
   async login(loginDto: LoginDto, tenantId?: string): Promise<TokenResponseDto> {
     const { email, password } = loginDto;
+    const loginIdentifier = `${email.toLowerCase()}:${tenantId || 'default'}`;
 
-    // 查找用户（支持多租户）
-    const whereCondition = tenantId
-      ? { tenantId, email: email.toLowerCase() }
-      : { email: email.toLowerCase() };
+    try {
+      // 检查登录失败次数
+      const failedAttempts = await this.redisService.getLoginAttempts(loginIdentifier);
+      if (failedAttempts >= 5) {
+        this.logger.warn(`登录失败次数过多: ${email}`, { email, tenantId, attempts: failedAttempts });
+        throw new AuthException(
+          '登录失败次数过多，请15分钟后重试',
+          429,
+          'TOO_MANY_LOGIN_ATTEMPTS',
+          { retryAfter: 15 * 60 } // 15 minutes
+        );
+      }
 
-    const user = await this.prisma.user.findFirst({
-      where: whereCondition,
-      include: { tenant: true },
-    });
+      // 查找用户（支持多租户）
+      const whereCondition = tenantId
+        ? { tenantId, email: email.toLowerCase() }
+        : { email: email.toLowerCase() };
 
-    if (!user) {
-      throw new NotFoundException('用户不存在');
+      const user = await this.prisma.user.findFirst({
+        where: whereCondition,
+        include: { tenant: true },
+      });
+
+      if (!user) {
+        await this.redisService.incrementLoginAttempts(loginIdentifier);
+        this.logger.warn(`登录失败 - 用户不存在: ${email}`, { email, tenantId });
+        throw new AuthException('邮箱或密码错误', 401, 'INVALID_CREDENTIALS');
+      }
+
+      if (!user.tenant.isActive) {
+        this.logger.warn(`登录失败 - 租户已禁用: ${email}`, { email, tenantId: user.tenantId });
+        throw new TenantException('租户已被禁用', user.tenantId, 'login');
+      }
+
+      if (!user.isActive) {
+        this.logger.warn(`登录失败 - 用户已禁用: ${email}`, { email, userId: user.id });
+        throw new AuthException('用户账户已被禁用', 401, 'USER_DISABLED', { userId: user.id });
+      }
+
+      // 验证密码
+      const isPasswordValid = await this.passwordService.validatePassword(password, user.password);
+
+      if (!isPasswordValid) {
+        await this.redisService.incrementLoginAttempts(loginIdentifier);
+        this.logger.warn(`登录失败 - 密码错误: ${email}`, { email, userId: user.id });
+        throw new AuthException('邮箱或密码错误', 401, 'INVALID_CREDENTIALS');
+      }
+
+      // 登录成功，重置失败次数
+      await this.redisService.resetLoginAttempts(loginIdentifier);
+
+      // 更新最后登录时间
+      await this.prisma.user.update({
+        where: { id: user.id },
+        data: { lastLoginAt: new Date() },
+      });
+
+      this.logger.log(`用户登录成功: ${email}`, { email, userId: user.id, tenantId: user.tenantId });
+
+      // 生成tokens
+      const tokens = await this.generateTokens({ userId: user.id });
+
+      // 更新refresh token哈希
+      await this.updateRefreshTokenHash(user.id, tokens.refreshToken);
+
+      return tokens;
+    } catch (error) {
+      if (error instanceof AuthException || error instanceof TenantException) {
+        throw error;
+      }
+      
+      this.logger.error(`登录过程中发生错误: ${email}`, error.stack, { email, tenantId });
+      throw new DatabaseException('登录服务暂时不可用，请稍后重试', 'login', error);
     }
-
-    if (!user.tenant.isActive) {
-      throw new UnauthorizedException('租户已被禁用');
-    }
-
-    if (!user.isActive) {
-      throw new UnauthorizedException('用户已被禁用');
-    }
-
-    // 验证密码
-    const isPasswordValid = await this.passwordService.validatePassword(password, user.password);
-
-    if (!isPasswordValid) {
-      throw new UnauthorizedException('密码错误');
-    }
-
-    // 更新最后登录时间
-    await this.prisma.user.update({
-      where: { id: user.id },
-      data: { lastLoginAt: new Date() },
-    });
-
-    // 生成tokens
-    const tokens = await this.generateTokens({ userId: user.id });
-
-    // 更新refresh token哈希
-    await this.updateRefreshTokenHash(user.id, tokens.refreshToken);
-
-    return tokens;
   }
 
   /**
@@ -365,25 +412,41 @@ export class AuthService {
         secret: jwtConfig.refreshSecret,
       });
 
+      // 验证用户是否存在且活跃
       const user = await this.prisma.user.findUnique({
         where: { id: payload.userId },
+        include: { tenant: true },
       });
 
-      if (!user || !user.hashedRt) {
-        throw new UnauthorizedException('无效的刷新Token');
+      if (!user || !user.isActive || !user.tenant.isActive) {
+        throw new UnauthorizedException('用户或租户已被禁用');
       }
 
-      // 验证refresh token
-      const isRtValid = await this.passwordService.validatePassword(refreshToken, user.hashedRt);
-
-      if (!isRtValid) {
-        throw new UnauthorizedException('无效的刷新Token');
+      // 从Redis验证refresh token
+      if (payload.tokenId) {
+        const storedToken = await this.redisService.getRefreshToken(payload.userId, payload.tokenId);
+        if (!storedToken || storedToken !== refreshToken) {
+          throw new UnauthorizedException('无效的刷新Token');
+        }
+        
+        // 撤销旧的refresh token
+        await this.redisService.revokeRefreshToken(payload.userId, payload.tokenId);
+      } else {
+        // 降级到数据库验证（向后兼容）
+        if (!user.hashedRt) {
+          throw new UnauthorizedException('无效的刷新Token');
+        }
+        
+        const isRtValid = await this.passwordService.validatePassword(refreshToken, user.hashedRt);
+        if (!isRtValid) {
+          throw new UnauthorizedException('无效的刷新Token');
+        }
       }
 
       // 生成新的tokens
       const tokens = await this.generateTokens({ userId: user.id });
 
-      // 更新refresh token哈希
+      // 更新refresh token哈希（向后兼容）
       await this.updateRefreshTokenHash(user.id, tokens.refreshToken);
 
       return tokens;
@@ -396,6 +459,13 @@ export class AuthService {
    * 用户登出
    */
   async logout(userId: number): Promise<boolean> {
+    // 撤销Redis中的所有refresh tokens
+    await this.redisService.revokeAllUserTokens(userId);
+    
+    // 删除所有用户会话
+    await this.redisService.deleteAllUserSessions(userId);
+    
+    // 数据库清除（向后兼容）
     await this.prisma.user.update({
       where: { id: userId },
       data: { hashedRt: null },
@@ -432,13 +502,18 @@ export class AuthService {
    */
   private async generateTokens(payload: { userId: number }): Promise<TokenResponseDto> {
     const jwtConfig = this.configService.get('jwt');
+    const tokenId = `${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
+    
+    // 添加tokenId到payload中用于Redis存储
+    const accessPayload = { ...payload, tokenId };
+    const refreshPayload = { ...payload, tokenId, type: 'refresh' };
 
     const [accessToken, refreshToken] = await Promise.all([
-      this.jwtService.signAsync(payload, {
+      this.jwtService.signAsync(accessPayload, {
         secret: jwtConfig.accessSecret,
         expiresIn: jwtConfig.accessExpiresIn,
       }),
-      this.jwtService.signAsync(payload, {
+      this.jwtService.signAsync(refreshPayload, {
         secret: jwtConfig.refreshSecret,
         expiresIn: jwtConfig.refreshExpiresIn,
       }),
@@ -447,6 +522,15 @@ export class AuthService {
     // 解码token获取过期时间
     const accessDecoded = jwtDecode(accessToken) as any;
     const refreshDecoded = jwtDecode(refreshToken) as any;
+    
+    // 将refresh token存储到Redis中
+    const refreshExpiresInSeconds = refreshDecoded.exp - Math.floor(Date.now() / 1000);
+    await this.redisService.storeRefreshToken(
+      payload.userId, 
+      tokenId, 
+      refreshToken, 
+      refreshExpiresInSeconds
+    );
 
     return {
       accessToken,
@@ -458,13 +542,19 @@ export class AuthService {
   }
 
   /**
-   * 更新refresh token哈希
+   * 更新refresh token哈希（已迁移到Redis，保持数据库兼容性）
    */
   private async updateRefreshTokenHash(userId: number, refreshToken: string): Promise<void> {
-    const hashedRt = await this.passwordService.hashPassword(refreshToken);
-    await this.prisma.user.update({
-      where: { id: userId },
-      data: { hashedRt },
-    });
+    try {
+      // 继续更新数据库以保持向后兼容
+      const hashedRt = await this.passwordService.hashPassword(refreshToken);
+      await this.prisma.user.update({
+        where: { id: userId },
+        data: { hashedRt },
+      });
+    } catch (error) {
+      // 如果数据库更新失败，不影响Redis存储的token功能
+      console.log('数据库refresh token更新失败，但Redis存储正常:', error.message);
+    }
   }
 }

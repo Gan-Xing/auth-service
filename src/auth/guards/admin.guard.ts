@@ -24,8 +24,13 @@ export class AdminGuard implements CanActivate {
     try {
       // 验证JWT令牌
       const payload = await this.jwtService.verifyAsync(adminToken, {
-        secret: process.env.JWT_SECRET,
+        secret: process.env.JWT_ACCESS_SECRET,
       });
+
+      // 检查是否为管理员token
+      if (payload.type !== 'admin_access') {
+        throw new UnauthorizedException('无效的管理员令牌类型');
+      }
 
       // 检查用户是否存在且为管理员
       const user = await this.usersService.findOne(payload.sub);
@@ -71,18 +76,19 @@ export class AdminGuard implements CanActivate {
   }
 
   private isAdmin(user: any): boolean {
-    // 检查用户角色
-    if (user.role === 'super_admin' || user.role === 'admin') {
+    // 检查用户是否为系统管理员（没有租户限制）
+    if (!user.tenantId) {
       return true;
     }
 
-    // 检查用户权限
-    if (user.permissions && user.permissions.includes('admin')) {
-      return true;
-    }
+    // 检查用户邮箱是否在管理员白名单中
+    const adminEmails = [
+      'admin@auth-service.com',
+      'admin@example.com',
+      // 可以从环境变量或配置文件中读取
+    ];
 
-    // 检查是否为系统管理员（没有租户限制）
-    if (!user.tenantId && user.isSystemAdmin) {
+    if (adminEmails.includes(user.email)) {
       return true;
     }
 

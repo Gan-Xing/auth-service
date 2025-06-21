@@ -1,5 +1,6 @@
 import { Injectable, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
+import { RedisService } from '../../redis/redis.service';
 import { EmailService } from '../../email/email.service';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -7,6 +8,7 @@ import { v4 as uuidv4 } from 'uuid';
 export class VerificationService {
   constructor(
     private readonly prisma: PrismaService,
+    private readonly redisService: RedisService,
     private readonly emailService: EmailService,
   ) {}
 
@@ -21,26 +23,41 @@ export class VerificationService {
     const token = uuidv4();
 
     // 设置过期时间（10分钟后）
-    const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
+    const expiresInSeconds = 10 * 60; // 10 minutes
+    const expiresAt = new Date(Date.now() + expiresInSeconds * 1000);
 
-    // 清理该邮箱的旧验证码
-    await this.prisma.verificationCode.deleteMany({
-      where: {
-        target: email.toLowerCase(),
-        type: 'EMAIL',
-      },
-    });
+    // 先尝试使用Redis存储验证码
+    try {
+      // 删除旧的验证码
+      await this.redisService.deleteVerificationCode(email.toLowerCase());
+      
+      // 存储新的验证码到Redis（包含token信息）
+      const verificationData = { code, token, email: email.toLowerCase() };
+      await this.redisService.set(`verification_token:${token}`, verificationData, expiresInSeconds);
+      await this.redisService.storeVerificationCode(email.toLowerCase(), JSON.stringify(verificationData), expiresInSeconds);
+    } catch (redisError) {
+      // Redis失败时降级到数据库
+      console.log('Redis存储验证码失败，降级到数据库:', redisError.message);
+      
+      // 清理该邮箱的旧验证码
+      await this.prisma.verificationCode.deleteMany({
+        where: {
+          target: email.toLowerCase(),
+          type: 'EMAIL',
+        },
+      });
 
-    // 保存新的验证码
-    await this.prisma.verificationCode.create({
-      data: {
-        type: 'EMAIL',
-        target: email.toLowerCase(),
-        code,
-        token,
-        expiresAt,
-      },
-    });
+      // 保存新的验证码
+      await this.prisma.verificationCode.create({
+        data: {
+          type: 'EMAIL',
+          target: email.toLowerCase(),
+          code,
+          token,
+          expiresAt,
+        },
+      });
+    }
 
     // 发送邮件
     const emailSent = await this.emailService.sendVerificationCode(email, code);
@@ -59,6 +76,30 @@ export class VerificationService {
    * 验证邮箱验证码
    */
   async verifyEmailCode(token: string, code: string): Promise<{ email: string; isValid: boolean }> {
+    // 首先尝试从Redis获取验证码
+    try {
+      const redisData = await this.redisService.get<any>(`verification_token:${token}`);
+      
+      if (redisData) {
+        // Redis中找到验证码
+        if (redisData.code !== code) {
+          return { email: '', isValid: false };
+        }
+        
+        // 验证成功，删除Redis中的验证码（防止重复使用）
+        await this.redisService.del(`verification_token:${token}`);
+        await this.redisService.deleteVerificationCode(redisData.email);
+        
+        return {
+          email: redisData.email,
+          isValid: true,
+        };
+      }
+    } catch (redisError) {
+      console.log('Redis验证码查询失败，降级到数据库:', redisError.message);
+    }
+
+    // Redis失败或找不到，降级到数据库
     const verification = await this.prisma.verificationCode.findUnique({
       where: { token },
     });
@@ -80,7 +121,7 @@ export class VerificationService {
       return { email: '', isValid: false };
     }
 
-    // 验证码码不匹配
+    // 验证码不匹配
     if (verification.code !== code) {
       return { email: '', isValid: false };
     }

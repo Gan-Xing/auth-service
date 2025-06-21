@@ -13,6 +13,7 @@ import { TenantService } from './services/tenant.service';
 import { PasswordService } from './services/password.service';
 import { VerificationService } from './services/verification.service';
 import { UsersService } from './services/users.service';
+import { AdminService } from './services/admin.service';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { ApiKeyGuard } from './guards/api-key.guard';
 import { AdminGuard } from './guards/admin.guard';
@@ -40,6 +41,7 @@ import { EmailService } from '../email/email.service';
     PasswordService,
     VerificationService,
     UsersService,
+    AdminService,
     JwtStrategy,
     ApiKeyGuard,
     AdminGuard,

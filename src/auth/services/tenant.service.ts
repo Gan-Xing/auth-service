@@ -226,4 +226,121 @@ export class TenantService {
       updatedAt: tenant.updatedAt,
     };
   }
+
+  /**
+   * 更新租户信息
+   */
+  async updateTenant(tenantId: string, updateData: Partial<CreateTenantDto>): Promise<TenantResponseDto> {
+    const { name, domain } = updateData;
+
+    // 检查租户是否存在
+    const existingTenant = await this.prisma.tenant.findUnique({
+      where: { id: tenantId },
+    });
+
+    if (!existingTenant) {
+      throw new NotFoundException('租户不存在');
+    }
+
+    // 如果更新域名，检查是否已被使用
+    if (domain && domain !== existingTenant.domain) {
+      const domainExists = await this.prisma.tenant.findUnique({
+        where: { domain },
+      });
+
+      if (domainExists) {
+        throw new ConflictException('该域名已被使用');
+      }
+    }
+
+    // 更新租户
+    const tenant = await this.prisma.tenant.update({
+      where: { id: tenantId },
+      data: {
+        ...(name && { name }),
+        ...(domain !== undefined && { domain }),
+      },
+    });
+
+    return {
+      id: tenant.id,
+      name: tenant.name,
+      domain: tenant.domain,
+      apiKey: tenant.apiKey,
+      isActive: tenant.isActive,
+      createdAt: tenant.createdAt,
+      updatedAt: tenant.updatedAt,
+    };
+  }
+
+  /**
+   * 删除租户
+   */
+  async deleteTenant(tenantId: string): Promise<{ message: string }> {
+    // 检查租户是否存在
+    const existingTenant = await this.prisma.tenant.findUnique({
+      where: { id: tenantId },
+    });
+
+    if (!existingTenant) {
+      throw new NotFoundException('租户不存在');
+    }
+
+    // 删除租户（级联删除相关数据）
+    await this.prisma.tenant.delete({
+      where: { id: tenantId },
+    });
+
+    return {
+      message: '租户删除成功',
+    };
+  }
+
+  /**
+   * 暂停租户
+   */
+  async suspendTenant(tenantId: string): Promise<TenantResponseDto> {
+    const tenant = await this.prisma.tenant.update({
+      where: { id: tenantId },
+      data: { isActive: false },
+    });
+
+    if (!tenant) {
+      throw new NotFoundException('租户不存在');
+    }
+
+    return {
+      id: tenant.id,
+      name: tenant.name,
+      domain: tenant.domain,
+      apiKey: tenant.apiKey,
+      isActive: tenant.isActive,
+      createdAt: tenant.createdAt,
+      updatedAt: tenant.updatedAt,
+    };
+  }
+
+  /**
+   * 激活租户
+   */
+  async activateTenant(tenantId: string): Promise<TenantResponseDto> {
+    const tenant = await this.prisma.tenant.update({
+      where: { id: tenantId },
+      data: { isActive: true },
+    });
+
+    if (!tenant) {
+      throw new NotFoundException('租户不存在');
+    }
+
+    return {
+      id: tenant.id,
+      name: tenant.name,
+      domain: tenant.domain,
+      apiKey: tenant.apiKey,
+      isActive: tenant.isActive,
+      createdAt: tenant.createdAt,
+      updatedAt: tenant.updatedAt,
+    };
+  }
 }

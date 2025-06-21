@@ -11,6 +11,7 @@ import {
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
 import { AuthService } from './auth.service';
 import { ApiKeyGuard } from './guards/api-key.guard';
 import {
@@ -32,6 +33,7 @@ export class AuthController {
 
   @Post('login')
   @HttpCode(HttpStatus.OK)
+  @Throttle({ default: { limit: 5, ttl: 60000 } }) // 每分钟最多5次登录尝试
   @ApiOperation({ summary: '用户登录' })
   @ApiResponse({ status: 200, description: '登录成功', type: TokenResponseDto })
   @ApiResponse({ status: 401, description: '用户名或密码错误' })
@@ -42,6 +44,7 @@ export class AuthController {
   }
 
   @Post('register')
+  @Throttle({ default: { limit: 3, ttl: 60000 } }) // 每分钟最多3次注册尝试
   @ApiOperation({ summary: '用户注册（基础版本）' })
   @ApiResponse({ status: 201, description: '注册成功', type: TokenResponseDto })
   @ApiResponse({ status: 409, description: '用户已存在' })
@@ -52,6 +55,7 @@ export class AuthController {
   }
 
   @Post('register-with-code')
+  @Throttle({ default: { limit: 3, ttl: 60000 } }) // 每分钟最多3次验证码注册尝试
   @ApiOperation({ summary: '邮箱验证码注册' })
   @ApiResponse({ status: 201, description: '注册成功', type: TokenResponseDto })
   @ApiResponse({ status: 400, description: '验证码无效' })
@@ -63,6 +67,7 @@ export class AuthController {
 
   @Post('send-verification-code')
   @HttpCode(HttpStatus.OK)
+  @Throttle({ default: { limit: 2, ttl: 60000 } }) // 每分钟最多2次验证码发送
   @ApiOperation({ summary: '发送邮箱验证码' })
   @ApiResponse({ status: 200, description: '验证码发送成功' })
   @ApiResponse({ status: 400, description: '发送失败或频率限制' })
@@ -72,6 +77,7 @@ export class AuthController {
 
   @Post('request-password-reset')
   @HttpCode(HttpStatus.OK)
+  @Throttle({ default: { limit: 2, ttl: 300000 } }) // 每5分钟最多2次密码重置请求
   @ApiOperation({ summary: '申请密码重置' })
   @ApiResponse({ status: 200, description: '重置邮件已发送' })
   @UseGuards(ApiKeyGuard)
@@ -82,6 +88,7 @@ export class AuthController {
 
   @Post('reset-password')
   @HttpCode(HttpStatus.OK)
+  @Throttle({ default: { limit: 3, ttl: 300000 } }) // 每5分钟最多3次密码重置执行
   @ApiOperation({ summary: '重置密码' })
   @ApiResponse({ status: 200, description: '密码重置成功' })
   @ApiResponse({ status: 400, description: '重置链接无效或已过期' })
@@ -92,6 +99,7 @@ export class AuthController {
   @Patch('change-password')
   @UseGuards(AuthGuard('jwt'))
   @ApiBearerAuth()
+  @Throttle({ default: { limit: 5, ttl: 300000 } }) // 每5分钟最多5次密码修改
   @ApiOperation({ summary: '修改密码' })
   @ApiResponse({ status: 200, description: '密码修改成功' })
   @ApiResponse({ status: 401, description: '原密码错误' })

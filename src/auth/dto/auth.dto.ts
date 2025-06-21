@@ -1,5 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsEmail, IsNotEmpty, IsString, MinLength, IsOptional } from 'class-validator';
+import { IsEmail, IsNotEmpty, IsString, MinLength, IsOptional, Length, Matches } from 'class-validator';
+import { IsStrongPassword, IsBusinessEmail, IsValidUsername, IsValidPhoneNumber } from '../../common/validators/auth.validators';
 
 export class LoginDto {
   @ApiProperty({ description: '邮箱地址', example: 'user@example.com' })
@@ -48,7 +49,8 @@ export class RegisterDto {
 
   @ApiProperty({ description: '国家', required: false, example: 'US' })
   @IsOptional()
-  @IsString()
+  @Length(2, 3, { message: '国家代码必须为2-3个字符' })
+  @Matches(/^[A-Z]{2,3}$/, { message: '国家代码必须为大写字母' })
   country?: string;
 
   @ApiProperty({
@@ -95,17 +97,20 @@ export class RegisterWithCodeDto {
 
   @ApiProperty({ description: '国家', required: false, example: 'US' })
   @IsOptional()
-  @IsString()
+  @Length(2, 3, { message: '国家代码必须为2-3个字符' })
+  @Matches(/^[A-Z]{2,3}$/, { message: '国家代码必须为大写字母' })
   country?: string;
 
   @ApiProperty({ description: '验证Token', example: 'abc123def456' })
   @IsString()
   @IsNotEmpty({ message: '验证Token不能为空' })
+  @Length(10, 100, { message: '验证Token长度不正确' })
   verificationToken: string;
 
   @ApiProperty({ description: '验证码', example: '123456' })
   @IsString()
   @IsNotEmpty({ message: '验证码不能为空' })
+  @Matches(/^\d{6}$/, { message: '验证码必须为6位数字' })
   verificationCode: string;
 
   @ApiProperty({
@@ -144,7 +149,7 @@ export class TokenResponseDto {
 
 export class SendVerificationCodeDto {
   @ApiProperty({ description: '邮箱地址', example: 'user@example.com' })
-  @IsEmail({}, { message: '请输入有效的邮箱地址' })
+  @IsBusinessEmail({ message: '请提供有效的商业邮箱地址' })
   @IsNotEmpty({ message: '邮箱不能为空' })
   email: string;
 }
