@@ -24,17 +24,32 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     let errorCode: string;
     let details: any;
 
-    // Log the error for debugging
-    this.logger.error(
-      `Exception occurred: ${exception instanceof Error ? exception.message : 'Unknown error'}`,
-      exception instanceof Error ? exception.stack : undefined,
-      {
+    // 判断是否为需要忽略的错误
+    const isIgnorableError = this.isIgnorableError(request.url, exception);
+    
+    // 根据错误类型决定日志级别
+    if (!isIgnorableError) {
+      const logLevel = this.getLogLevel(exception);
+      const errorMessage = `Exception occurred: ${exception instanceof Error ? exception.message : 'Unknown error'}`;
+      const errorContext = {
         url: request.url,
         method: request.method,
         ip: request.ip,
         userAgent: request.headers['user-agent'],
-      },
-    );
+      };
+
+      if (logLevel === 'error') {
+        this.logger.error(
+          errorMessage,
+          exception instanceof Error ? exception.stack : undefined,
+          errorContext,
+        );
+      } else if (logLevel === 'warn') {
+        this.logger.warn(errorMessage, errorContext);
+      } else {
+        this.logger.debug(errorMessage, errorContext);
+      }
+    }
 
     if (exception instanceof HttpException) {
       status = exception.getStatus();
@@ -132,5 +147,56 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     }
 
     response.status(status).json(errorResponse);
+  }
+
+  /**
+   * 判断是否为可忽略的错误
+   */
+  private isIgnorableError(url: string, exception: unknown): boolean {
+    // Chrome DevTools 相关的请求
+    if (url.includes('/.well-known/appspecific/com.chrome.devtools.json')) {
+      return true;
+    }
+
+    // 静态资源 404 错误（对于不存在的 CSS、JS 文件）
+    if (exception instanceof HttpException && exception.getStatus() === 404) {
+      const staticExtensions = ['.css', '.js', '.ico', '.png', '.jpg', '.jpeg', '.gif', '.svg'];
+      return staticExtensions.some(ext => url.endsWith(ext));
+    }
+
+    return false;
+  }
+
+  /**
+   * 根据异常类型确定日志级别
+   */
+  private getLogLevel(exception: unknown): 'error' | 'warn' | 'debug' {
+    if (exception instanceof HttpException) {
+      const status = exception.getStatus();
+      
+      // 客户端错误（4xx）通常记录为 warn 或 debug
+      if (status >= 400 && status < 500) {
+        // 认证和授权错误记录为 warn
+        if (status === 401 || status === 403) {
+          return 'warn';
+        }
+        // 其他客户端错误记录为 debug
+        return 'debug';
+      }
+      
+      // 服务器错误（5xx）记录为 error
+      if (status >= 500) {
+        return 'error';
+      }
+    }
+
+    // 数据库错误记录为 error
+    if (exception instanceof PrismaClientKnownRequestError || 
+        exception instanceof PrismaClientValidationError) {
+      return 'error';
+    }
+
+    // 其他错误默认记录为 error
+    return 'error';
   }
 }

@@ -22,21 +22,25 @@ export class MonitoringMiddleware implements NestMiddleware {
       // 异步记录指标，不阻塞响应
       setImmediate(async () => {
         try {
-          // 从请求中提取租户和用户信息
-          const tenantId = req.headers['x-tenant-id'] as string;
-          const userId = (req as any).user?.sub;
+          // 检查监控服务是否可用
+          if (this.monitoringService && typeof this.monitoringService.recordApiRequest === 'function') {
+            // 从请求中提取租户和用户信息
+            const tenantId = req.headers['x-tenant-id'] as string;
+            const userId = (req as any).user?.sub;
 
-          await this.monitoringService.recordApiRequest(
-            endpoint,
-            method,
-            responseTime,
-            statusCode,
-            tenantId,
-            userId,
-          );
+            await this.monitoringService.recordApiRequest(
+              endpoint,
+              method,
+              responseTime,
+              statusCode,
+              tenantId,
+              userId,
+            );
+          }
         } catch (error) {
           // 不要因为监控失败而影响主要功能
-          console.error('Monitoring middleware error:', error.message);
+          // console.error('Monitoring middleware error:', error.message);
+          // 静默忽略监控错误，避免日志污染
         }
       });
 

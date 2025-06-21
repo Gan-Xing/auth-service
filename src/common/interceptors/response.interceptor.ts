@@ -37,7 +37,7 @@ export class ResponseInterceptor<T> implements NestInterceptor<T, ApiResponse<T>
           return data;
         }
 
-        return {
+        const wrappedResponse = {
           success: true,
           data,
           message: this.getSuccessMessage(request.method, request.url),
@@ -45,6 +45,15 @@ export class ResponseInterceptor<T> implements NestInterceptor<T, ApiResponse<T>
           path: request.url,
           method: request.method,
         };
+        
+        // 特别打印 /admin/auth/login 的响应
+        if (request.url === '/admin/auth/login') {
+          console.log('\n========== ResponseInterceptor: Final Response ==========');
+          console.log(JSON.stringify(wrappedResponse, null, 2));
+          console.log('========================================================\n');
+        }
+        
+        return wrappedResponse;
       }),
       tap(() => {
         const duration = Date.now() - startTime;

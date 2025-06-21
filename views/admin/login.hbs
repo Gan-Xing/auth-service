@@ -213,16 +213,16 @@
             </div>
             {{/if}}
 
-            <form class="login-form" id="loginForm">
+            <form class="login-form" id="loginForm" action="/admin/auth/login" method="POST">
                 <div class="form-group">
                     <label for="email">邮箱地址</label>
-                    <input type="email" id="email" name="email" required placeholder="请输入管理员邮箱">
+                    <input type="email" id="email" name="email" required placeholder="请输入管理员邮箱" value="{{#if email}}{{email}}{{else}}admin@auth-service.com{{/if}}">
                     <div class="error-message" id="emailError"></div>
                 </div>
 
                 <div class="form-group">
                     <label for="password">密码</label>
-                    <input type="password" id="password" name="password" required placeholder="请输入密码">
+                    <input type="password" id="password" name="password" required placeholder="请输入密码" value="Admin123!@#">
                     <div class="error-message" id="passwordError"></div>
                 </div>
 
@@ -251,8 +251,17 @@
     </div>
 
     <script>
-        document.getElementById('loginForm').addEventListener('submit', async function(e) {
+        // 确保DOM加载完成后再绑定事件
+        document.addEventListener('DOMContentLoaded', function() {
+            const loginForm = document.getElementById('loginForm');
+            if (!loginForm) {
+                console.error('Login form not found');
+                return;
+            }
+            
+            loginForm.addEventListener('submit', async function(e) {
             e.preventDefault();
+            e.stopPropagation();
             
             const form = e.target;
             const formData = new FormData(form);
@@ -279,12 +288,36 @@
                     })
                 });
                 
-                const result = await response.json();
+                let result;
+                try {
+                    const text = await response.text();
+                    console.log('Login response:', text);
+                    result = JSON.parse(text);
+                } catch (e) {
+                    console.error('Failed to parse response:', e);
+                    showError('服务器响应格式错误');
+                    return;
+                }
                 
-                if (result.success) {
+                console.log('Parsed result:', result);
+                
+                // 检查嵌套的 success 字段
+                const isSuccess = result.success || (result.data && result.data.success);
+                const data = result.data && result.data.data ? result.data.data : result.data;
+                
+                if (isSuccess) {
+                    // 保存token到localStorage
+                    if (data && data.token) {
+                        console.log('Saving token to localStorage');
+                        localStorage.setItem('adminToken', data.token);
+                        localStorage.setItem('adminUser', JSON.stringify(data.user));
+                    }
+                    
                     // 登录成功，重定向到管理后台
                     const returnUrl = new URLSearchParams(window.location.search).get('returnUrl');
-                    window.location.href = returnUrl || '/admin/dashboard';
+                    setTimeout(() => {
+                        window.location.href = returnUrl || '/admin/dashboard';
+                    }, 100);
                 } else {
                     // 显示错误信息
                     showError(result.message || '登录失败，请重试');
@@ -304,6 +337,7 @@
                 loginButton.disabled = false;
                 loading.style.display = 'none';
             }
+            });
         });
         
         function clearErrors() {
@@ -340,16 +374,20 @@
         // 自动聚焦到邮箱输入框
         document.getElementById('email').focus();
         
-        // 处理回车键
-        document.addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                const activeElement = document.activeElement;
-                if (activeElement.id === 'email') {
-                    document.getElementById('password').focus();
-                } else if (activeElement.id === 'password') {
-                    document.getElementById('loginForm').dispatchEvent(new Event('submit'));
+        // 处理回车键 - 确保在DOMContentLoaded内部
+        document.addEventListener('DOMContentLoaded', function() {
+            document.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    const activeElement = document.activeElement;
+                    if (activeElement.id === 'email') {
+                        document.getElementById('password').focus();
+                    } else if (activeElement.id === 'password') {
+                        // 直接调用登录处理函数，而不是触发submit事件
+                        document.getElementById('loginButton').click();
+                    }
                 }
-            }
+            });
         });
     </script>
 </body>

@@ -10,6 +10,7 @@ import {
   Body,
   UseGuards,
   Request,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
@@ -47,18 +48,12 @@ export class AdminController {
    * 仪表板页面
    */
   @Get('dashboard')
-  @UseGuards(AdminGuard)
-  @Render('admin/dashboard')
+  @Render('admin/dashboard-simple')
   @ApiOperation({ summary: '管理后台仪表板' })
   async dashboard() {
-    // 获取统计数据
-    const stats = await this.getDashboardStats();
-    
-    return {
-      title: '仪表板 - Auth Service 管理后台',
-      stats,
-      currentPage: 'dashboard',
-    };
+    // 简化的仪表板，数据通过API加载
+    // 不使用 AdminGuard，因为这是一个页面请求，认证在客户端处理
+    return {};
   }
 
   /**
@@ -394,11 +389,42 @@ export class AdminController {
   @Get('login')
   @Render('admin/login')
   @ApiOperation({ summary: '管理员登录页面' })
-  async loginPage(@Query('returnUrl') returnUrl?: string) {
+  async loginPage(@Query('returnUrl') returnUrl?: string, @Query('email') email?: string, @Query('password') password?: string) {
+    // 如果URL中包含email和password，说明是表单意外提交了GET请求
+    if (email && password) {
+      return {
+        title: '管理员登录 - Auth Service',
+        returnUrl: returnUrl || '/admin/dashboard',
+        siteName: 'Auth Service',
+        error: '请使用正确的登录方式，不要在URL中包含密码信息。',
+        email: email, // 保留邮箱，但不保留密码
+      };
+    }
+    
     return {
       title: '管理员登录 - Auth Service',
       returnUrl: returnUrl || '/admin/dashboard',
       siteName: 'Auth Service',
+      email: 'admin@auth-service.com', // 预填默认管理员邮箱
+    };
+  }
+
+  /**
+   * 处理错误的POST到登录页面（重定向到正确的API）
+   */
+  @Post('login')
+  @ApiOperation({ summary: '重定向错误的登录POST请求' })
+  async loginPagePost() {
+    return {
+      success: false,
+      error: {
+        message: "请使用正确的API端点 /admin/auth/login",
+        errorCode: "WRONG_ENDPOINT",
+        statusCode: 400,
+        timestamp: new Date().toISOString(),
+        path: "/admin/login", 
+        method: "POST"
+      }
     };
   }
 
@@ -414,10 +440,7 @@ export class AdminController {
       // 验证用户凭据
       const user = await this.validateAdminUser(email, password);
       if (!user) {
-        return {
-          success: false,
-          message: '邮箱或密码错误',
-        };
+        throw new UnauthorizedException('邮箱或密码错误');
       }
 
       // 生成管理员token
@@ -429,24 +452,36 @@ export class AdminController {
         // TODO: 设置httpOnly cookie
       }
 
-      return {
-        success: true,
-        message: '登录成功',
-        data: {
-          token,
-          user: {
-            id: user.id,
-            email: user.email,
-            firstName: user.firstName,
-            lastName: user.lastName,
-          },
+      // 将token保存到session或cookie中，以便后续请求使用
+      if (req.session) {
+        req.session.adminToken = token;
+        req.session.adminUser = {
+          id: user.id,
+          email: user.email,
+          firstName: user.firstName,
+          lastName: user.lastName,
+        };
+      }
+
+      // 直接返回数据，ResponseInterceptor会自动包装
+      const responseData = {
+        token,
+        user: {
+          id: user.id,
+          email: user.email,
+          firstName: user.firstName,
+          lastName: user.lastName,
         },
       };
+      
+      console.log('\n========== /admin/auth/login Response Data ==========');
+      console.log('Response will be:', JSON.stringify(responseData, null, 2));
+      console.log('=====================================================\n');
+      
+      return responseData;
     } catch (error) {
-      return {
-        success: false,
-        message: error.message || '登录失败',
-      };
+      console.error('Admin login error:', error);
+      throw error; // 让全局异常过滤器处理
     }
   }
 
@@ -505,6 +540,33 @@ export class AdminController {
   }
 
   // ==================== API 端点 ====================
+
+  /**
+   * 获取仪表板统计数据
+   */
+  @Get('api/dashboard-stats')
+  @UseGuards(AdminGuard)
+  @ApiOperation({ summary: '获取仪表板统计数据' })
+  async getDashboardStatsApi() {
+    try {
+      const stats = await this.getDashboardStats();
+      return {
+        success: true,
+        stats,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: '获取统计数据失败',
+        stats: {
+          totalTenants: 0,
+          totalUsers: 0,
+          activeUsers: 0,
+          newUsersToday: 0,
+        },
+      };
+    }
+  }
 
   /**
    * 租户管理 API

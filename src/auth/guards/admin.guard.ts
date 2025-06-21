@@ -14,9 +14,10 @@ export class AdminGuard implements CanActivate {
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest<Request>();
-    
+
     // 检查是否有有效的管理员会话
     const adminToken = this.extractTokenFromRequest(request);
+
     if (!adminToken) {
       throw new UnauthorizedException('需要管理员权限');
     }
@@ -67,7 +68,7 @@ export class AdminGuard implements CanActivate {
     }
 
     // 从session获取
-    const sessionToken = request.session?.['admin_token'];
+    const sessionToken = request.session?.['adminToken'] || request.session?.['admin_token'];
     if (sessionToken) {
       return sessionToken;
     }
