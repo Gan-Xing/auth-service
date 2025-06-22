@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>用户信息 - Auth Service</title>
+    <link rel="stylesheet" href="/css/tailwind.css">
+</head>
+<body class="min-h-screen bg-gradient-to-br from-green-50 to-emerald-100 py-8 px-4">
+    <div class="max-w-2xl mx-auto">
+        <div class="bg-white rounded-2xl shadow-xl p-8 text-center">
+            <!-- 成功图标 -->
+            <div class="w-16 h-16 bg-green-500 rounded-full mx-auto mb-6 flex items-center justify-center">
+                <svg class="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+                </svg>
+            </div>
+            
+            <h1 class="text-3xl font-bold text-gray-900 mb-4">认证成功！</h1>
+            <p class="text-gray-600 mb-8">您已成功登录 Auth Service 统一认证平台</p>
+            
+            <!-- OAuth 流程说明 -->
+            <div class="bg-blue-50 border border-blue-200 rounded-lg p-6 mb-8 text-left">
+                <div class="flex items-start">
+                    <div class="flex-shrink-0">
+                        <svg class="w-6 h-6 text-blue-600 mt-1" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path>
+                        </svg>
+                    </div>
+                    <div class="ml-3">
+                        <h3 class="text-lg font-semibold text-blue-900 mb-2">🔄 标准 OAuth 流程</h3>
+                        <p class="text-blue-800 mb-3">正常情况下，用户登录成功后会被<strong>直接跳转</strong>到原始请求的页面，符合 OAuth 2.0 标准。</p>
+                        <p class="text-blue-800 mb-2"><strong>您看到此页面是因为：</strong></p>
+                        <ul class="list-disc list-inside text-blue-700 space-y-1 text-sm">
+                            <li>您直接访问了登录页面（没有来源应用）</li>
+                            <li>您正在测试认证服务</li>
+                            <li>需要查看集成示例</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 操作按钮 -->
+            <div class="flex flex-wrap justify-center gap-4 mb-8">
+                <a href="/auth/profile" class="inline-flex items-center px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors">
+                    <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    查看 API 文档
+                </a>
+                <a href="/api/docs" class="inline-flex items-center px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors">
+                    <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clip-rule="evenodd"></path>
+                    </svg>
+                    Swagger 文档
+                </a>
+                <a href="/auth/logout" class="inline-flex items-center px-4 py-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors">
+                    <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M3 3a1 1 0 00-1 1v12a1 1 0 102 0V4a1 1 0 00-1-1zm10.293 9.293a1 1 0 001.414 1.414l3-3a1 1 0 000-1.414l-3-3a1 1 0 10-1.414 1.414L14.586 9H7a1 1 0 100 2h7.586l-1.293 1.293z" clip-rule="evenodd"></path>
+                    </svg>
+                    退出登录
+                </a>
+            </div>
+            
+            <!-- 集成说明 -->
+            <div class="bg-gray-50 rounded-lg p-6 text-left">
+                <div class="flex items-center mb-4">
+                    <svg class="w-6 h-6 text-gray-600 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M12.316 3.051a1 1 0 01.633 1.265l-4 12a1 1 0 11-1.898-.632l4-12a1 1 0 011.265-.633zM5.707 6.293a1 1 0 010 1.414L3.414 10l2.293 2.293a1 1 0 11-1.414 1.414l-3-3a1 1 0 010-1.414l3-3a1 1 0 011.414 0zm8.586 0a1 1 0 011.414 0l3 3a1 1 0 010 1.414l-3 3a1 1 0 11-1.414-1.414L16.586 10l-2.293-2.293a1 1 0 010-1.414z" clip-rule="evenodd"></path>
+                    </svg>
+                    <h3 class="text-lg font-semibold text-gray-900">🔧 集成说明</h3>
+                </div>
+                
+                <p class="text-gray-700 mb-6">恭喜！您已成功登录 Auth Service。您的应用现在可以使用 JWT Token 进行身份验证。</p>
+                
+                <!-- 前端集成示例 -->
+                <div class="mb-6">
+                    <h4 class="font-semibold text-gray-800 mb-3">前端集成示例：</h4>
+                    <div class="bg-gray-900 text-gray-100 p-4 rounded-lg overflow-x-auto">
+                        <pre class="text-sm"><code>// 检测登录状态
+if (!localStorage.getItem('jwt_token')) {
+  // 跳转到统一登录页
+  window.location.href = 'https://auth.yourdomain.com/login?redirect=' + 
+    encodeURIComponent(window.location.href);
+}
+
+// 使用 Token 调用 API
+fetch('/api/user/profile', {
+  headers: {
+    'Authorization': 'Bearer ' + localStorage.getItem('jwt_token')
+  }
+})</code></pre>
+                    </div>
+                </div>
+                
+                <!-- 后端验证示例 -->
+                <div>
+                    <h4 class="font-semibold text-gray-800 mb-3">后端验证示例：</h4>
+                    <div class="bg-gray-900 text-gray-100 p-4 rounded-lg overflow-x-auto">
+                        <pre class="text-sm"><code>// 验证 JWT Token
+curl -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+     https://auth.yourdomain.com/auth/profile
+
+// 获取 JWKS 公钥（用于验证 JWT）
+curl https://auth.yourdomain.com/.well-known/jwks.json</code></pre>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 页脚 -->
+        <div class="text-center mt-6">
+            <p class="text-gray-500 text-sm">&copy; 2025 Auth Service. 统一认证平台</p>
+        </div>
+    </div>
+</body>
+</html>

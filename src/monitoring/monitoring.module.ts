@@ -2,6 +2,7 @@ import { Module, forwardRef } from '@nestjs/common';
 import { ScheduleModule } from '@nestjs/schedule';
 import { MonitoringService } from './monitoring.service';
 import { AlertService } from './alert.service';
+import { MetricsCollectorService } from './metrics-collector.service';
 import { MonitoringController } from './monitoring.controller';
 import { MonitoringMiddleware } from './monitoring.middleware';
 import { MonitoringInterceptor } from './monitoring.interceptor';
@@ -21,6 +22,7 @@ import { AuthModule } from '../auth/auth.module';
   providers: [
     MonitoringService,
     AlertService,
+    MetricsCollectorService,
     MonitoringMiddleware,
     MonitoringInterceptor,
   ],
@@ -28,6 +30,7 @@ import { AuthModule } from '../auth/auth.module';
   exports: [
     MonitoringService,
     AlertService,
+    MetricsCollectorService,
     MonitoringMiddleware,
     MonitoringInterceptor,
   ],

@@ -12,6 +12,7 @@ import {
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { MonitoringService } from './monitoring.service';
 import { AlertService } from './alert.service';
+import { MetricsCollectorService } from './metrics-collector.service';
 import { AdminGuard } from '../auth/guards/admin.guard';
 import { MetricType, AlertType, AlertSeverity } from '@prisma/client';
 
@@ -21,6 +22,7 @@ export class MonitoringController {
   constructor(
     private readonly monitoringService: MonitoringService,
     private readonly alertService: AlertService,
+    private readonly metricsCollectorService: MetricsCollectorService,
   ) {}
 
   @Get('health')
@@ -208,6 +210,125 @@ export class MonitoringController {
       timestamp: new Date().toISOString(),
       service: 'auth-service',
       version: process.env.npm_package_version || '1.0.0',
+    };
+  }
+
+  @Get('metrics/comprehensive')
+  @UseGuards(AdminGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: '获取综合指标数据' })
+  @ApiResponse({ status: 200, description: '返回所有类型的指标数据' })
+  async getComprehensiveMetrics() {
+    const metrics = await this.metricsCollectorService.collectAllMetrics();
+    
+    return {
+      success: true,
+      data: metrics,
+    };
+  }
+
+  @Get('metrics/system')
+  @UseGuards(AdminGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: '获取系统指标' })
+  @ApiResponse({ status: 200, description: '返回系统性能指标' })
+  async getSystemMetrics() {
+    const metrics = await this.metricsCollectorService.collectSystemMetrics();
+    
+    return {
+      success: true,
+      data: metrics,
+    };
+  }
+
+  @Get('metrics/application')
+  @UseGuards(AdminGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: '获取应用指标' })
+  @ApiResponse({ status: 200, description: '返回应用性能指标' })
+  async getApplicationMetrics() {
+    const metrics = await this.metricsCollectorService.collectApplicationMetrics();
+    
+    return {
+      success: true,
+      data: metrics,
+    };
+  }
+
+  @Get('metrics/security')
+  @UseGuards(AdminGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: '获取安全指标' })
+  @ApiResponse({ status: 200, description: '返回安全相关指标' })
+  async getSecurityMetrics() {
+    const metrics = await this.metricsCollectorService.collectSecurityMetrics();
+    
+    return {
+      success: true,
+      data: metrics,
+    };
+  }
+
+  @Get('metrics/business')
+  @UseGuards(AdminGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: '获取业务指标' })
+  @ApiResponse({ status: 200, description: '返回业务相关指标' })
+  async getBusinessMetrics() {
+    const metrics = await this.metricsCollectorService.collectBusinessMetrics();
+    
+    return {
+      success: true,
+      data: metrics,
+    };
+  }
+
+  @Get('metrics/historical')
+  @UseGuards(AdminGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: '获取历史指标数据' })
+  @ApiResponse({ status: 200, description: '返回历史指标数据' })
+  async getHistoricalMetrics(@Query('hours') hours?: string) {
+    const hoursNum = hours ? parseInt(hours, 10) : 24;
+    const metrics = await this.metricsCollectorService.getHistoricalMetrics(hoursNum);
+    
+    return {
+      success: true,
+      data: {
+        metrics,
+        timeRange: `${hoursNum} hours`,
+        count: metrics.length,
+      },
+    };
+  }
+
+  @Post('metrics/collect')
+  @UseGuards(AdminGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: '手动触发指标收集' })
+  @ApiResponse({ status: 200, description: '指标收集已触发' })
+  async triggerMetricsCollection() {
+    await this.metricsCollectorService.collectAndStoreMetrics();
+    
+    return {
+      success: true,
+      message: '指标收集已完成',
+      timestamp: new Date(),
+    };
+  }
+
+  @Post('metrics/reset')
+  @UseGuards(AdminGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: '重置指标计数器' })
+  @ApiResponse({ status: 200, description: '指标计数器已重置' })
+  async resetMetricsCounters() {
+    this.metricsCollectorService.resetCounters();
+    
+    return {
+      success: true,
+      message: '指标计数器已重置',
+      timestamp: new Date(),
     };
   }
 }

@@ -31,9 +31,11 @@ export class ResponseInterceptor<T> implements NestInterceptor<T, ApiResponse<T>
       map((data) => {
         const isHealthCheck = request.url.includes('/health');
         const isSwaggerDoc = request.url.includes('/api/docs') || request.url.includes('/api-json');
+        const isTemplateRoute = request.url.startsWith('/admin/') && !request.url.startsWith('/admin/api/') && !request.url.startsWith('/admin/auth/');
+        const isHtmlContent = response.getHeader('Content-Type')?.toString().includes('text/html');
         
-        // Don't wrap certain responses
-        if (isHealthCheck || isSwaggerDoc || response.getHeader('Content-Type')?.toString().includes('text/html')) {
+        // Don't wrap certain responses (health checks, swagger docs, template pages)
+        if (isHealthCheck || isSwaggerDoc || isTemplateRoute || isHtmlContent) {
           return data;
         }
 

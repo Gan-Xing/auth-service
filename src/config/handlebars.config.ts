@@ -78,5 +78,32 @@ export function registerHandlebarsHelpers() {
     return options.inverse(this);
   });
 
+  // 注册 substring helper (字符串截取)
+  hbs.registerHelper('substring', function(str: string, start: number, end?: number) {
+    if (!str || typeof str !== 'string') return '';
+    if (end !== undefined) {
+      return str.substring(start, end);
+    }
+    return str.substring(start);
+  });
+
+  // 注册 capitalize helper (首字母大写)
+  hbs.registerHelper('capitalize', function(str: string) {
+    if (!str || typeof str !== 'string') return '';
+    return str.charAt(0).toUpperCase() + str.slice(1);
+  });
+
+  // 注册 upper helper (转大写)
+  hbs.registerHelper('upper', function(str: string) {
+    if (!str || typeof str !== 'string') return '';
+    return str.toUpperCase();
+  });
+
+  // 注册 lower helper (转小写)
+  hbs.registerHelper('lower', function(str: string) {
+    if (!str || typeof str !== 'string') return '';
+    return str.toLowerCase();
+  });
+
   console.log('✅ Handlebars helpers registered successfully');
 }

@@ -40,7 +40,7 @@ export class PagesController {
    * 渲染登录页面
    */
   @Get('login')
-  @Render('login')
+  @Render('login-tailwind')
   async loginPage(@Query('redirect') redirect?: string) {
     return {
       redirect: this.validateRedirect(redirect),
@@ -96,7 +96,7 @@ export class PagesController {
    * 渲染注册页面
    */
   @Get('register')
-  @Render('register')
+  @Render('register-tailwind')
   async registerPage(@Query('redirect') redirect?: string) {
     return {
       redirect: this.validateRedirect(redirect),
@@ -161,7 +161,7 @@ export class PagesController {
    * 用户信息页面（认证成功后的默认页面）
    */
   @Get('profile')
-  @Render('profile')
+  @Render('profile-tailwind')
   async profilePage() {
     return {
       title: '认证成功 - Auth Service',
@@ -250,7 +250,7 @@ export class PagesController {
    * 渲染登录页面并显示错误
    */
   private renderLoginWithError(res: Response, error: string, formData: LoginFormData) {
-    return res.render('login', {
+    return res.render('login-tailwind', {
       error,
       email: formData.email,
       redirect: formData.redirect,
@@ -262,7 +262,7 @@ export class PagesController {
    * 渲染注册页面并显示错误
    */
   private renderRegisterWithError(res: Response, error: string, formData: RegisterFormData) {
-    return res.render('register', {
+    return res.render('register-tailwind', {
       error,
       firstName: formData.firstName,
       lastName: formData.lastName,

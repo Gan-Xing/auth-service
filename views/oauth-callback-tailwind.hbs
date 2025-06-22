@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>登录成功 - Auth Service</title>
+    <link rel="stylesheet" href="/css/tailwind.css">
+</head>
+<body class="min-h-screen bg-gradient-to-br from-green-50 to-emerald-100 flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-xl max-w-md w-full p-8 text-center">
+        <!-- 成功图标 -->
+        <div class="w-16 h-16 mx-auto mb-6 text-green-500">
+            <svg fill="currentColor" viewBox="0 0 20 20" class="w-full h-full">
+                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+            </svg>
+        </div>
+        
+        <!-- 消息内容 -->
+        <div class="mb-8">
+            <h1 class="text-2xl font-bold text-green-600 mb-4">登录成功！</h1>
+            <p class="text-gray-600">
+                正在为您跳转
+                <span class="inline-flex">
+                    <span class="animate-pulse">.</span>
+                    <span class="animate-pulse" style="animation-delay: 0.2s;">.</span>
+                    <span class="animate-pulse" style="animation-delay: 0.4s;">.</span>
+                </span>
+            </p>
+        </div>
+
+        <!-- 加载动画 -->
+        <div class="flex justify-center mb-6">
+            <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-green-500"></div>
+        </div>
+
+        <!-- 状态信息 -->
+        <div class="text-sm text-gray-500">
+            <p id="statusText">正在处理认证信息...</p>
+        </div>
+    </div>
+
+    <!-- 页脚 -->
+    <div class="fixed bottom-4 left-1/2 transform -translate-x-1/2">
+        <p class="text-gray-500 text-sm">&copy; 2025 Auth Service. 统一认证平台</p>
+    </div>
+
+    <script>
+        // 自动提取URL参数中的token并跳转
+        function parseQueryParams() {
+            const params = new URLSearchParams(window.location.search);
+            return {
+                access_token: params.get('access_token'),
+                refresh_token: params.get('refresh_token'),
+                redirect_url: params.get('redirect_url')
+            };
+        }
+
+        function updateStatus(message, isError = false) {
+            const statusText = document.getElementById('statusText');
+            statusText.textContent = message;
+            if (isError) {
+                statusText.className = 'text-sm text-red-500';
+            }
+        }
+
+        function showError() {
+            // 更改图标颜色
+            const icon = document.querySelector('.w-16.h-16');
+            icon.className = 'w-16 h-16 mx-auto mb-6 text-red-500';
+            
+            // 更改标题
+            const title = document.querySelector('h1');
+            title.textContent = '登录失败';
+            title.className = 'text-2xl font-bold text-red-600 mb-4';
+            
+            // 更改描述
+            const description = document.querySelector('p.text-gray-600');
+            description.innerHTML = '未能获取到有效的认证信息';
+            
+            // 隐藏加载动画
+            const spinner = document.querySelector('.animate-spin');
+            spinner.style.display = 'none';
+            
+            updateStatus('认证失败，请重新登录', true);
+        }
+
+        function handleTokens() {
+            const { access_token, refresh_token, redirect_url } = parseQueryParams();
+            
+            if (access_token && refresh_token) {
+                updateStatus('保存认证信息...');
+                
+                // 存储tokens
+                localStorage.setItem('access_token', access_token);
+                localStorage.setItem('refresh_token', refresh_token);
+                
+                updateStatus('准备跳转...');
+                
+                // 跳转到目标页面或默认页面
+                const targetUrl = redirect_url || '/profile';
+                setTimeout(() => {
+                    window.location.href = targetUrl;
+                }, 1500);
+            } else {
+                // 如果没有token，显示错误
+                showError();
+            }
+        }
+
+        // 页面加载后处理tokens
+        window.addEventListener('load', handleTokens);
+        
+        // 5秒后如果还没跳转，显示手动跳转选项
+        setTimeout(() => {
+            if (window.location.pathname === '/oauth-callback') {
+                const statusDiv = document.getElementById('statusText').parentElement;
+                statusDiv.innerHTML += `
+                    <div class="mt-4">
+                        <a href="/profile" class="inline-flex items-center px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors">
+                            <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" clip-rule="evenodd"></path>
+                            </svg>
+                            手动跳转
+                        </a>
+                    </div>
+                `;
+            }
+        }, 5000);
+    </script>
+</body>
+</html>

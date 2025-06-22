@@ -418,11 +418,15 @@ export class MonitoringService {
   }
 
   private getMemoryUsage(): number {
-    const totalMemory = os.totalmem();
-    const freeMemory = os.freemem();
-    const usedMemory = totalMemory - freeMemory;
+    // 获取Node.js进程内存使用情况，而不是系统总内存
+    const memUsage = process.memoryUsage();
+    // 使用RSS (Resident Set Size) - 进程占用的物理内存
+    // 设定合理的基准值 (比如200MB) 来计算百分比
+    const baseMemoryMB = 200; // 200MB作为基准
+    const usedMemoryMB = memUsage.rss / 1024 / 1024; // 转换为MB
     
-    return Math.round((usedMemory / totalMemory) * 100);
+    // 返回相对于基准值的百分比，最大不超过100%
+    return Math.min(Math.round((usedMemoryMB / baseMemoryMB) * 100), 100);
   }
 
   private async checkDatabaseHealth(): Promise<boolean> {

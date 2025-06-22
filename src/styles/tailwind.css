@@ -1,0 +1,159 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* 自定义组件样式 */
+@layer components {
+  .admin-sidebar {
+    @apply w-64 bg-gradient-to-br from-primary-500 to-secondary-500 text-white fixed h-screen overflow-y-auto z-[1000];
+  }
+  
+  .admin-nav a {
+    @apply flex items-center px-5 py-3 text-white/80 hover:text-white hover:bg-white/10 transition-all duration-300 border-r-4 border-transparent;
+  }
+  
+  .admin-nav a.active {
+    @apply text-white bg-white/15 border-r-white;
+  }
+  
+  .admin-nav .icon {
+    @apply w-5 h-5 mr-3 opacity-80;
+  }
+  
+  .admin-main {
+    @apply flex-1 ml-64 min-h-screen;
+  }
+  
+  .admin-header {
+    @apply bg-white px-6 py-4 border-b border-gray-200 flex justify-between items-center sticky top-0 z-[100];
+  }
+  
+  .admin-content {
+    @apply p-6;
+  }
+  
+  .stat-card {
+    @apply bg-white p-5 rounded-lg shadow-sm border-l-4 border-primary-500;
+  }
+  
+  .stat-card.success {
+    @apply border-l-success-500;
+  }
+  
+  .stat-card.warning {
+    @apply border-l-warning-500;
+  }
+  
+  .stat-card.error {
+    @apply border-l-error-500;
+  }
+  
+  .stat-value {
+    @apply text-3xl font-bold text-gray-900 leading-none;
+  }
+  
+  .stat-label {
+    @apply text-sm text-gray-500 mt-1;
+  }
+  
+  .stat-change {
+    @apply text-xs mt-2;
+  }
+  
+  .stat-change.positive {
+    @apply text-success-500;
+  }
+  
+  .stat-change.negative {
+    @apply text-error-500;
+  }
+  
+  .dashboard-card {
+    @apply bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden;
+  }
+  
+  .card-header {
+    @apply px-5 py-4 border-b border-gray-200 bg-gray-50;
+  }
+  
+  .card-body {
+    @apply p-5;
+  }
+  
+  .card-footer {
+    @apply px-5 py-4 border-t border-gray-200 bg-gray-50;
+  }
+  
+  .btn {
+    @apply inline-flex items-center justify-center px-4 py-2 border-0 rounded-lg text-sm font-medium cursor-pointer transition-all duration-300 gap-1.5;
+  }
+  
+  .btn-primary {
+    @apply bg-primary-500 text-white hover:bg-primary-600 shadow-sm;
+  }
+  
+  .btn-secondary {
+    @apply bg-gray-500 text-white hover:bg-gray-600 shadow-sm;
+  }
+  
+  .btn-success {
+    @apply bg-success-500 text-white hover:bg-success-600 shadow-sm;
+  }
+  
+  .btn-warning {
+    @apply bg-warning-500 text-white hover:bg-warning-600 shadow-sm;
+  }
+  
+  .btn-danger {
+    @apply bg-error-500 text-white hover:bg-error-600 shadow-sm;
+  }
+  
+  .btn-info {
+    @apply bg-info-500 text-white hover:bg-info-600 shadow-sm;
+  }
+  
+  .btn-sm {
+    @apply px-3 py-1.5 text-xs;
+  }
+  
+  .status-badge {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+  }
+  
+  .status-healthy {
+    @apply bg-green-100 text-green-800;
+  }
+  
+  .status-warning {
+    @apply bg-yellow-100 text-yellow-800;
+  }
+  
+  .status-error {
+    @apply bg-red-100 text-red-800;
+  }
+  
+  .status-unknown {
+    @apply bg-gray-100 text-gray-800;
+  }
+  
+  .data-table {
+    @apply w-full border-collapse;
+  }
+  
+  .data-table th,
+  .data-table td {
+    @apply px-3 py-3 text-left border-b border-gray-200;
+  }
+  
+  .data-table th {
+    @apply bg-gray-50 font-semibold text-gray-700 text-sm;
+  }
+  
+  .data-table td {
+    @apply text-gray-600;
+  }
+  
+  .data-table tr:hover {
+    @apply bg-gray-50;
+  }
+}

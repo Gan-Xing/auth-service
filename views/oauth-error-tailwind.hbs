@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>登录失败 - Auth Service</title>
+    <link rel="stylesheet" href="/css/tailwind.css">
+</head>
+<body class="min-h-screen bg-gradient-to-br from-red-50 to-pink-100 flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-xl max-w-md w-full p-8 text-center">
+        <!-- 错误图标 -->
+        <div class="w-16 h-16 mx-auto mb-6 text-red-500">
+            <svg fill="currentColor" viewBox="0 0 20 20" class="w-full h-full">
+                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+            </svg>
+        </div>
+        
+        <!-- 错误消息 -->
+        <div class="mb-6">
+            <h1 class="text-2xl font-bold text-red-600 mb-2">登录失败</h1>
+            <p class="text-gray-600">第三方登录过程中出现了问题</p>
+        </div>
+
+        <!-- 错误详情 -->
+        <div class="bg-red-50 border border-red-200 rounded-lg p-4 mb-6 text-left">
+            <div class="flex items-start">
+                <div class="flex-shrink-0">
+                    <svg class="w-5 h-5 text-red-400 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+                    </svg>
+                </div>
+                <div class="ml-3">
+                    <h3 class="text-sm font-medium text-red-800 mb-1">错误详情</h3>
+                    <p id="error-description" class="text-sm text-red-700">未知错误，请稍后重试</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 操作按钮 -->
+        <div class="space-y-3">
+            <a href="/login" class="w-full inline-flex items-center justify-center px-4 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors">
+                <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M9.707 14.707a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 1.414L7.414 9H15a1 1 0 110 2H7.414l2.293 2.293a1 1 0 010 1.414z" clip-rule="evenodd"></path>
+                </svg>
+                返回登录页面
+            </a>
+            <a href="/register" class="w-full inline-flex items-center justify-center px-4 py-3 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors">
+                <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M8 9a3 3 0 100-6 3 3 0 000 6zM8 11a6 6 0 016 6H2a6 6 0 016-6zM16 7a1 1 0 10-2 0v1h-1a1 1 0 100 2h1v1a1 1 0 102 0v-1h1a1 1 0 100-2h-1V7z"></path>
+                </svg>
+                注册新账户
+            </a>
+        </div>
+
+        <!-- 帮助信息 -->
+        <div class="mt-6 text-xs text-gray-500">
+            <p>如果问题持续出现，请联系技术支持</p>
+        </div>
+    </div>
+
+    <!-- 页脚 -->
+    <div class="fixed bottom-4 left-1/2 transform -translate-x-1/2">
+        <p class="text-gray-500 text-sm">&copy; 2025 Auth Service. 统一认证平台</p>
+    </div>
+
+    <script>
+        // 解析错误参数并显示相应信息
+        function parseError() {
+            const params = new URLSearchParams(window.location.search);
+            const error = params.get('error');
+            const errorDescription = params.get('error_description');
+            
+            const errorElement = document.getElementById('error-description');
+            
+            const errorMessages = {
+                'access_denied': '您拒绝了授权请求。如需继续，请重新尝试并允许应用访问您的账户信息。',
+                'invalid_request': '无效的登录请求。请检查登录链接是否正确。',
+                'no_user_data': '无法获取您的账户信息。请确保您的第三方账户已设置公开邮箱地址。',
+                'oauth_callback_failed': '登录过程中发生服务器错误。请稍后重试。',
+                'server_error': '服务器内部错误。我们已收到通知，请稍后重试。',
+                'unauthorized_client': '应用程序未被授权使用此登录方式。',
+                'unsupported_response_type': '不支持的响应类型。',
+                'invalid_scope': '请求的权限范围无效。',
+                'temporarily_unavailable': '服务临时不可用，请稍后重试。'
+            };
+            
+            if (error && errorMessages[error]) {
+                errorElement.textContent = errorMessages[error];
+            } else if (errorDescription) {
+                errorElement.textContent = decodeURIComponent(errorDescription);
+            } else if (error) {
+                errorElement.textContent = `错误代码: ${error}`;
+            }
+
+            // 根据错误类型调整UI
+            if (error === 'access_denied') {
+                // 用户拒绝授权，提供更友好的UI
+                const icon = document.querySelector('.w-16.h-16');
+                icon.innerHTML = `
+                    <svg fill="currentColor" viewBox="0 0 20 20" class="w-full h-full">
+                        <path fill-rule="evenodd" d="M13.477 14.89A6 6 0 015.11 6.524l8.367 8.368zm1.414-1.414L6.524 5.11a6 6 0 018.367 8.366zM18 10a8 8 0 11-16 0 8 8 0 0116 0z" clip-rule="evenodd"></path>
+                    </svg>
+                `;
+                
+                const title = document.querySelector('h1');
+                title.textContent = '授权被拒绝';
+                title.className = 'text-2xl font-bold text-yellow-600 mb-2';
+                
+                const icon_container = document.querySelector('.w-16.h-16');
+                icon_container.className = 'w-16 h-16 mx-auto mb-6 text-yellow-500';
+            }
+        }
+
+        // 页面加载后解析错误信息
+        window.addEventListener('load', parseError);
+        
+        // 5秒后显示额外帮助信息
+        setTimeout(() => {
+            const helpDiv = document.querySelector('.mt-6.text-xs');
+            helpDiv.innerHTML += `
+                <div class="mt-2 p-2 bg-blue-50 rounded text-blue-700">
+                    <p class="text-xs">💡 小提示：大多数登录问题可以通过清除浏览器缓存或尝试其他登录方式解决</p>
+                </div>
+            `;
+        }, 5000);
+    </script>
+</body>
+</html>

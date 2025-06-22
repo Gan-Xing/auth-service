@@ -1,0 +1,1237 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>配置管理 - Auth Service</title>
+    <style>
+        /* ===================== 基础样式重置 ===================== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #1a1a1a;
+            overflow-x: hidden;
+        }
+
+        /* ===================== 背景浮动动画 ===================== */
+        body::before {
+            content: '';
+            position: fixed;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 1px, transparent 1px);
+            background-size: 50px 50px;
+            animation: float 20s linear infinite;
+            z-index: -1;
+        }
+
+        @keyframes float {
+            0% { transform: translate(0, 0) rotate(0deg); }
+            33% { transform: translate(30px, -30px) rotate(120deg); }
+            66% { transform: translate(-20px, 20px) rotate(240deg); }
+            100% { transform: translate(0, 0) rotate(360deg); }
+        }
+
+        /* ===================== 主布局 ===================== */
+        .admin-container {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* ===================== 侧边栏样式 ===================== */
+        .sidebar {
+            width: 280px;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            box-shadow: 4px 0 20px rgba(0, 0, 0, 0.1);
+            position: fixed;
+            height: 100vh;
+            overflow-y: auto;
+            z-index: 1000;
+            border-right: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .sidebar-header {
+            padding: 30px 25px;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .sidebar-header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -50%;
+            width: 100px;
+            height: 100px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            animation: pulse 4s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1) translate(0, 0); opacity: 0.5; }
+            50% { transform: scale(1.2) translate(-10px, -10px); opacity: 0.8; }
+        }
+
+        .sidebar-title {
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 5px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .sidebar-subtitle {
+            font-size: 14px;
+            opacity: 0.8;
+            position: relative;
+            z-index: 1;
+        }
+
+        .sidebar-nav {
+            padding: 25px 0;
+        }
+
+        .nav-item {
+            margin: 8px 20px;
+            border-radius: 12px;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .nav-item:hover {
+            transform: translateX(5px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .nav-link {
+            display: flex;
+            align-items: center;
+            padding: 15px 20px;
+            text-decoration: none;
+            color: #4a5568;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .nav-link::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+            transition: left 0.5s ease;
+        }
+
+        .nav-link:hover::before {
+            left: 100%;
+        }
+
+        .nav-link.active {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .nav-icon {
+            width: 20px;
+            height: 20px;
+            margin-right: 12px;
+            transition: transform 0.3s ease;
+        }
+
+        .nav-link:hover .nav-icon {
+            transform: scale(1.1) rotate(5deg);
+        }
+
+        /* ===================== 主内容区域 ===================== */
+        .main-content {
+            flex: 1;
+            margin-left: 280px;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            min-height: 100vh;
+        }
+
+        .content-header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            padding: 25px 35px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 2px 20px rgba(0, 0, 0, 0.1);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .content-title {
+            font-size: 28px;
+            font-weight: 800;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 8px;
+        }
+
+        .content-subtitle {
+            color: #6b7280;
+            font-size: 16px;
+            font-weight: 400;
+        }
+
+        .content-body {
+            padding: 35px;
+        }
+
+        /* ===================== 设置卡片样式 ===================== */
+        .settings-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 25px;
+            margin-bottom: 30px;
+        }
+
+        .setting-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: all 0.4s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .setting-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            transform: scaleX(0);
+            transition: transform 0.4s ease;
+        }
+
+        .setting-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.15);
+        }
+
+        .setting-card:hover::before {
+            transform: scaleX(1);
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .card-icon {
+            width: 24px;
+            height: 24px;
+            margin-right: 12px;
+            color: #667eea;
+        }
+
+        .card-title {
+            font-size: 20px;
+            font-weight: 700;
+            color: #1a1a1a;
+        }
+
+        .card-description {
+            color: #6b7280;
+            font-size: 14px;
+            margin-bottom: 20px;
+            line-height: 1.5;
+        }
+
+        /* ===================== 表单控件样式 ===================== */
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 14px;
+            font-weight: 600;
+            color: #374151;
+            margin-bottom: 8px;
+        }
+
+        .form-input, .form-select, .form-textarea {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e5e7eb;
+            border-radius: 12px;
+            font-size: 14px;
+            transition: all 0.3s ease;
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(10px);
+        }
+
+        .form-input:focus, .form-select:focus, .form-textarea:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+            background: rgba(255, 255, 255, 0.95);
+        }
+
+        .form-textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        .form-switch {
+            position: relative;
+            display: inline-block;
+            width: 60px;
+            height: 34px;
+        }
+
+        .form-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .switch-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: 0.4s;
+            border-radius: 34px;
+        }
+
+        .switch-slider:before {
+            position: absolute;
+            content: "";
+            height: 26px;
+            width: 26px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: 0.4s;
+            border-radius: 50%;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        }
+
+        input:checked + .switch-slider {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+        }
+
+        input:checked + .switch-slider:before {
+            transform: translateX(26px);
+        }
+
+        .switch-group {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 0;
+        }
+
+        .switch-label {
+            font-size: 14px;
+            font-weight: 500;
+            color: #374151;
+        }
+
+        /* ===================== 按钮样式 ===================== */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 12px 24px;
+            font-size: 14px;
+            font-weight: 600;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.5s ease;
+        }
+
+        .btn:hover::before {
+            left: 100%;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.5);
+        }
+
+        .btn-secondary {
+            background: rgba(107, 114, 128, 0.9);
+            color: white;
+            box-shadow: 0 4px 15px rgba(107, 114, 128, 0.3);
+        }
+
+        .btn-secondary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(107, 114, 128, 0.4);
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+            color: white;
+            box-shadow: 0 4px 15px rgba(239, 68, 68, 0.4);
+        }
+
+        .btn-danger:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(239, 68, 68, 0.5);
+        }
+
+        .btn-icon {
+            width: 16px;
+            height: 16px;
+            margin-right: 8px;
+        }
+
+        /* ===================== 操作按钮区域 ===================== */
+        .actions-bar {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            padding: 20px 35px;
+            border-top: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 -2px 20px rgba(0, 0, 0, 0.1);
+            position: sticky;
+            bottom: 0;
+            z-index: 100;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .actions-info {
+            color: #6b7280;
+            font-size: 14px;
+        }
+
+        .actions-buttons {
+            display: flex;
+            gap: 15px;
+        }
+
+        /* ===================== 状态指示器 ===================== */
+        .status-indicator {
+            display: inline-flex;
+            align-items: center;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .status-active {
+            background: rgba(34, 197, 94, 0.1);
+            color: #059669;
+            border: 1px solid rgba(34, 197, 94, 0.2);
+        }
+
+        .status-inactive {
+            background: rgba(239, 68, 68, 0.1);
+            color: #dc2626;
+            border: 1px solid rgba(239, 68, 68, 0.2);
+        }
+
+        .status-warning {
+            background: rgba(245, 158, 11, 0.1);
+            color: #d97706;
+            border: 1px solid rgba(245, 158, 11, 0.2);
+        }
+
+        /* ===================== 响应式设计 ===================== */
+        @media (max-width: 1200px) {
+            .settings-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+                transition: transform 0.3s ease;
+            }
+
+            .sidebar.active {
+                transform: translateX(0);
+            }
+
+            .main-content {
+                margin-left: 0;
+            }
+
+            .content-header, .content-body, .actions-bar {
+                padding-left: 20px;
+                padding-right: 20px;
+            }
+
+            .settings-grid {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+
+            .setting-card {
+                padding: 20px;
+            }
+        }
+
+        /* ===================== 动画增强 ===================== */
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .setting-card {
+            animation: slideIn 0.6s ease forwards;
+        }
+
+        .setting-card:nth-child(2) { animation-delay: 0.1s; }
+        .setting-card:nth-child(3) { animation-delay: 0.2s; }
+        .setting-card:nth-child(4) { animation-delay: 0.3s; }
+        .setting-card:nth-child(5) { animation-delay: 0.4s; }
+        .setting-card:nth-child(6) { animation-delay: 0.5s; }
+
+        /* ===================== 通知提示样式 ===================== */
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 16px 20px;
+            border-radius: 12px;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
+            backdrop-filter: blur(20px);
+            z-index: 2000;
+            transform: translateX(400px);
+            transition: transform 0.4s ease;
+        }
+
+        .notification.show {
+            transform: translateX(0);
+        }
+
+        .notification-success {
+            background: rgba(34, 197, 94, 0.9);
+            color: white;
+            border: 1px solid rgba(34, 197, 94, 0.3);
+        }
+
+        .notification-error {
+            background: rgba(239, 68, 68, 0.9);
+            color: white;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+    </style>
+</head>
+<body>
+    <div class="admin-container">
+        <!-- 侧边栏导航 -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <h1 class="sidebar-title">Auth Service</h1>
+                <p class="sidebar-subtitle">企业级认证管理平台</p>
+            </div>
+
+            <nav class="sidebar-nav">
+                <div class="nav-item">
+                    <a href="/admin/dashboard" class="nav-link">
+                        <svg class="nav-icon" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/>
+                        </svg>
+                        仪表板
+                    </a>
+                </div>
+
+                <div class="nav-item">
+                    <a href="/admin/tenants" class="nav-link">
+                        <svg class="nav-icon" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                        </svg>
+                        租户管理
+                    </a>
+                </div>
+
+                <div class="nav-item">
+                    <a href="/admin/users" class="nav-link">
+                        <svg class="nav-icon" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                        </svg>
+                        用户管理
+                    </a>
+                </div>
+
+                <div class="nav-item">
+                    <a href="/admin/settings" class="nav-link active">
+                        <svg class="nav-icon" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M12 15.5A3.5 3.5 0 0 1 8.5 12A3.5 3.5 0 0 1 12 8.5a3.5 3.5 0 0 1 3.5 3.5 3.5 3.5 0 0 1-3.5 3.5m7.43-2.53c.04-.32.07-.64.07-.97c0-.33-.03-.66-.07-1l2.11-1.63c.19-.15.24-.42.12-.64l-2-3.46c-.12-.22-.39-.31-.61-.22l-2.49 1c-.52-.39-1.06-.73-1.69-.98l-.37-2.65A.506.506 0 0 0 14 2h-4c-.25 0-.46.18-.5.42l-.37 2.65c-.63.25-1.17.59-1.69.98l-2.49-1c-.22-.09-.49 0-.61.22l-2 3.46c-.13.22-.07.49.12.64L4.57 11c-.04.34-.07.67-.07 1c0 .33.03.65.07.97l-2.11 1.66c-.19.15-.25.42-.12.64l2 3.46c.12.22.39.3.61.22l2.49-1.01c.52.4 1.06.74 1.69.99l.37 2.65c.04.24.25.42.5.42h4c.25 0 .46-.18.5-.42l.37-2.65c.63-.26 1.17-.59 1.69-.99l2.49 1.01c.22.08.49 0 .61-.22l2-3.46c.12-.22.07-.49-.12-.64l-2.11-1.66Z"/>
+                        </svg>
+                        配置管理
+                    </a>
+                </div>
+
+                <div class="nav-item">
+                    <a href="/admin/audit-logs" class="nav-link">
+                        <svg class="nav-icon" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z"/>
+                        </svg>
+                        审计日志
+                    </a>
+                </div>
+            </nav>
+        </aside>
+
+        <!-- 主内容区域 -->
+        <main class="main-content">
+            <!-- 页面头部 -->
+            <header class="content-header">
+                <div>
+                    <h1 class="content-title">配置管理</h1>
+                    <p class="content-subtitle">系统设置和功能配置管理</p>
+                </div>
+            </header>
+
+            <!-- 页面内容 -->
+            <div class="content-body">
+                <!-- 设置卡片网格 -->
+                <div class="settings-grid">
+                    <!-- 基础设置卡片 -->
+                    <div class="setting-card">
+                        <div class="card-header">
+                            <svg class="card-icon" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M12,8A4,4 0 0,1 16,12A4,4 0 0,1 12,16A4,4 0 0,1 8,12A4,4 0 0,1 12,8M12,10A2,2 0 0,0 10,12A2,2 0 0,0 12,14A2,2 0 0,0 14,12A2,2 0 0,0 12,10M10,22C9.75,22 9.54,21.82 9.5,21.58L9.13,18.93C8.5,18.68 7.96,18.34 7.44,17.94L4.95,18.95C4.73,19.03 4.46,18.95 4.34,18.73L2.34,15.27C2.21,15.05 2.27,14.78 2.46,14.63L4.57,12.97L4.5,12L4.57,11L2.46,9.37C2.27,9.22 2.21,8.95 2.34,8.73L4.34,5.27C4.46,5.05 4.73,4.96 4.95,5.05L7.44,6.05C7.96,5.66 8.5,5.32 9.13,5.07L9.5,2.42C9.54,2.18 9.75,2 10,2H14C14.25,2 14.46,2.18 14.5,2.42L14.87,5.07C15.5,5.32 16.04,5.66 16.56,6.05L19.05,5.05C19.27,4.96 19.54,5.05 19.66,5.27L21.66,8.73C21.79,8.95 21.73,9.22 21.54,9.37L19.43,11L19.5,12L19.43,13L21.54,14.63C21.73,14.78 21.79,15.05 21.66,15.27L19.66,18.73C19.54,18.95 19.27,19.04 19.05,18.95L16.56,17.95C16.04,18.34 15.5,18.68 14.87,18.93L14.5,21.58C14.46,21.82 14.25,22 14,22H10M11.25,4L10.88,6.61C9.68,6.86 8.62,7.5 7.85,8.39L5.44,7.35L4.69,8.65L6.8,10.2C6.4,11.37 6.4,12.64 6.8,13.8L4.68,15.36L5.43,16.66L7.86,15.62C8.63,16.5 9.68,17.14 10.87,17.38L11.24,20H12.76L13.13,17.39C14.32,17.14 15.37,16.5 16.14,15.62L18.57,16.66L19.32,15.36L17.2,13.81C17.6,12.64 17.6,11.37 17.2,10.2L19.31,8.65L18.56,7.35L16.15,8.39C15.38,7.5 14.32,6.86 13.12,6.62L12.75,4H11.25Z"/>
+                            </svg>
+                            <h3 class="card-title">基础设置</h3>
+                        </div>
+                        <p class="card-description">系统基础配置参数，包括应用名称、描述和基本信息设置。</p>
+                        
+                        <div class="form-group">
+                            <label class="form-label">应用名称</label>
+                            <input type="text" class="form-input" value="Auth Service" id="appName">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label">应用描述</label>
+                            <textarea class="form-textarea" id="appDescription" placeholder="企业级认证与权限管理系统">企业级认证与权限管理系统，提供完整的用户认证、授权和会话管理功能。</textarea>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label">系统版本</label>
+                            <input type="text" class="form-input" value="v1.2.0" readonly>
+                        </div>
+                    </div>
+
+                    <!-- 安全设置卡片 -->
+                    <div class="setting-card">
+                        <div class="card-header">
+                            <svg class="card-icon" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M12,1L3,5V11C3,16.55 6.84,21.74 12,23C17.16,21.74 21,16.55 21,11V5L12,1M12,7C13.4,7 14.8,8.6 14.8,10V11H16V16H8V11H9.2V10C9.2,8.6 10.6,7 12,7M12,8.2C11.2,8.2 10.4,8.7 10.4,10V11H13.6V10C13.6,8.7 12.8,8.2 12,8.2Z"/>
+                            </svg>
+                            <h3 class="card-title">安全设置</h3>
+                        </div>
+                        <p class="card-description">系统安全策略配置，包括密码策略、会话管理和访问控制。</p>
+                        
+                        <div class="switch-group">
+                            <span class="switch-label">启用双因素认证</span>
+                            <label class="form-switch">
+                                <input type="checkbox" id="enable2FA" checked>
+                                <span class="switch-slider"></span>
+                            </label>
+                        </div>
+                        
+                        <div class="switch-group">
+                            <span class="switch-label">强制密码复杂度</span>
+                            <label class="form-switch">
+                                <input type="checkbox" id="passwordComplexity" checked>
+                                <span class="switch-slider"></span>
+                            </label>
+                        </div>
+                        
+                        <div class="switch-group">
+                            <span class="switch-label">启用登录失败锁定</span>
+                            <label class="form-switch">
+                                <input type="checkbox" id="loginLockout">
+                                <span class="switch-slider"></span>
+                            </label>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label">会话超时时间（分钟）</label>
+                            <input type="number" class="form-input" value="30" id="sessionTimeout" min="5" max="1440">
+                        </div>
+                    </div>
+
+                    <!-- 邮件设置卡片 -->
+                    <div class="setting-card">
+                        <div class="card-header">
+                            <svg class="card-icon" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M20,8L12,13L4,8V6L12,11L20,6M20,4H4C2.89,4 2,4.89 2,6V18A2,2 0 0,0 4,20H20A2,2 0 0,0 22,18V6C22,4.89 21.1,4 20,4Z"/>
+                            </svg>
+                            <h3 class="card-title">邮件配置</h3>
+                        </div>
+                        <p class="card-description">SMTP邮件服务器配置，用于发送验证邮件、通知等。</p>
+                        
+                        <div class="switch-group">
+                            <span class="switch-label">启用邮件服务</span>
+                            <label class="form-switch">
+                                <input type="checkbox" id="enableEmail" checked>
+                                <span class="switch-slider"></span>
+                            </label>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label">SMTP服务器</label>
+                            <input type="text" class="form-input" value="smtp.gmail.com" id="smtpHost">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label">SMTP端口</label>
+                            <input type="number" class="form-input" value="587" id="smtpPort">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label">发件人邮箱</label>
+                            <input type="email" class="form-input" value="no-reply@authservice.com" id="fromEmail">
+                        </div>
+                    </div>
+
+                    <!-- OAuth设置卡片 -->
+                    <div class="setting-card">
+                        <div class="card-header">
+                            <svg class="card-icon" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M12,2A10,10 0 0,0 2,12C2,16.42 4.87,20.17 8.84,21.5C9.34,21.58 9.5,21.27 9.5,21C9.5,20.77 9.5,20.14 9.5,19.31C6.73,19.92 6.14,17.97 6.14,17.97C5.68,16.81 5.03,16.5 5.03,16.5C4.12,15.88 5.1,15.9 5.1,15.9C6.1,15.97 6.63,16.93 6.63,16.93C7.5,18.45 8.97,18 9.54,17.76C9.63,17.11 9.89,16.67 10.17,16.42C7.95,16.17 5.62,15.31 5.62,11.5C5.62,10.39 6,9.5 6.65,8.79C6.55,8.54 6.2,7.5 6.75,6.15C6.75,6.15 7.59,5.88 9.5,7.17C10.29,6.95 11.15,6.84 12,6.84C12.85,6.84 13.71,6.95 14.5,7.17C16.41,5.88 17.25,6.15 17.25,6.15C17.8,7.5 17.45,8.54 17.35,8.79C18,9.5 18.38,10.39 18.38,11.5C18.38,15.32 16.04,16.16 13.81,16.41C14.17,16.72 14.5,17.33 14.5,18.26C14.5,19.6 14.5,20.68 14.5,21C14.5,21.27 14.66,21.59 15.17,21.5C19.14,20.16 22,16.42 22,12A10,10 0 0,0 12,2Z"/>
+                            </svg>
+                            <h3 class="card-title">第三方登录</h3>
+                        </div>
+                        <p class="card-description">配置第三方OAuth登录提供商，支持GitHub、Google等。</p>
+                        
+                        <div class="switch-group">
+                            <span class="switch-label">启用GitHub登录</span>
+                            <span class="status-indicator status-active">已配置</span>
+                            <label class="form-switch">
+                                <input type="checkbox" id="enableGitHub" checked>
+                                <span class="switch-slider"></span>
+                            </label>
+                        </div>
+                        
+                        <div class="switch-group">
+                            <span class="switch-label">启用Google登录</span>
+                            <span class="status-indicator status-active">已配置</span>
+                            <label class="form-switch">
+                                <input type="checkbox" id="enableGoogle" checked>
+                                <span class="switch-slider"></span>
+                            </label>
+                        </div>
+                        
+                        <div class="switch-group">
+                            <span class="switch-label">启用微信登录</span>
+                            <span class="status-indicator status-warning">未配置</span>
+                            <label class="form-switch">
+                                <input type="checkbox" id="enableWechat">
+                                <span class="switch-slider"></span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- 功能开关卡片 -->
+                    <div class="setting-card">
+                        <div class="card-header">
+                            <svg class="card-icon" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M17,7H22V17H17V19A1,1 0 0,0 18,20H20V22H16.5C16.5,21 16.5,21 16.5,20H7.5C7.5,21 7.5,21 7.5,22H4V20H6A1,1 0 0,0 7,19V5A1,1 0 0,0 6,4H4V2H7.5C7.5,3 7.5,3 7.5,4H16.5C16.5,3 16.5,3 16.5,2H20V4H18A1,1 0 0,0 17,5V7M15,5H9V19H15V5M12,15.5L10.5,14L9,15.5L10.5,17L12,15.5Z"/>
+                            </svg>
+                            <h3 class="card-title">功能开关</h3>
+                        </div>
+                        <p class="card-description">动态控制系统功能模块的启用状态，支持运行时切换。</p>
+                        
+                        <div class="switch-group">
+                            <span class="switch-label">用户注册功能</span>
+                            <label class="form-switch">
+                                <input type="checkbox" id="enableUserRegistration" checked>
+                                <span class="switch-slider"></span>
+                            </label>
+                        </div>
+                        
+                        <div class="switch-group">
+                            <span class="switch-label">短信验证码</span>
+                            <label class="form-switch">
+                                <input type="checkbox" id="enableSMS">
+                                <span class="switch-slider"></span>
+                            </label>
+                        </div>
+                        
+                        <div class="switch-group">
+                            <span class="switch-label">系统监控</span>
+                            <label class="form-switch">
+                                <input type="checkbox" id="enableMonitoring" checked>
+                                <span class="switch-slider"></span>
+                            </label>
+                        </div>
+                        
+                        <div class="switch-group">
+                            <span class="switch-label">审计日志</span>
+                            <label class="form-switch">
+                                <input type="checkbox" id="enableAuditLog" checked>
+                                <span class="switch-slider"></span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- 系统监控卡片 -->
+                    <div class="setting-card">
+                        <div class="card-header">
+                            <svg class="card-icon" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M3,3H21V21H3V3M5,5V19H19V5H5M7,10H9V18H7V10M11,7H13V18H11V7M15,13H17V18H15V13Z"/>
+                            </svg>
+                            <h3 class="card-title">监控配置</h3>
+                        </div>
+                        <p class="card-description">系统性能监控和告警配置，确保服务稳定运行。</p>
+                        
+                        <div class="switch-group">
+                            <span class="switch-label">性能监控</span>
+                            <label class="form-switch">
+                                <input type="checkbox" id="enablePerformanceMonitoring" checked>
+                                <span class="switch-slider"></span>
+                            </label>
+                        </div>
+                        
+                        <div class="switch-group">
+                            <span class="switch-label">错误告警</span>
+                            <label class="form-switch">
+                                <input type="checkbox" id="enableErrorAlerts" checked>
+                                <span class="switch-slider"></span>
+                            </label>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label">监控数据保留天数</label>
+                            <input type="number" class="form-input" value="30" id="monitoringRetentionDays" min="1" max="365">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label">告警邮箱</label>
+                            <input type="email" class="form-input" value="admin@authservice.com" id="alertEmail">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 操作栏 -->
+            <div class="actions-bar">
+                <div class="actions-info">
+                    <span>最后更新：2024年12月22日 10:30</span>
+                </div>
+                <div class="actions-buttons">
+                    <button type="button" class="btn btn-secondary" onclick="resetSettings()">
+                        <svg class="btn-icon" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M12,4V2A10,10 0 0,0 2,12H4A8,8 0 0,1 12,4Z"/>
+                        </svg>
+                        重置设置
+                    </button>
+                    <button type="button" class="btn btn-primary" onclick="saveSettings()">
+                        <svg class="btn-icon" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M15,9H5V5H15M12,19A3,3 0 0,1 9,16A3,3 0 0,1 12,13A3,3 0 0,1 15,16A3,3 0 0,1 12,19M17,3H5C3.89,3 3,3.9 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V7L17,3Z"/>
+                        </svg>
+                        保存配置
+                    </button>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- 通知消息 -->
+    <div id="notification" class="notification">
+        <span id="notificationMessage"></span>
+    </div>
+
+    <script>
+        // 页面初始化和功能实现
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('✅ 配置管理页面加载完成');
+            initializeSettings();
+        });
+
+        // 初始化设置
+        function initializeSettings() {
+            // 加载已保存的设置
+            loadSavedSettings();
+            
+            // 绑定事件监听器
+            bindEventListeners();
+            
+            // 初始化表单验证
+            initializeValidation();
+        }
+
+        // 加载已保存的设置
+        function loadSavedSettings() {
+            try {
+                const savedSettings = localStorage.getItem('authServiceSettings');
+                if (savedSettings) {
+                    const settings = JSON.parse(savedSettings);
+                    applySettings(settings);
+                }
+            } catch (error) {
+                console.error('加载设置失败:', error);
+            }
+        }
+
+        // 应用设置到界面
+        function applySettings(settings) {
+            Object.keys(settings).forEach(key => {
+                const element = document.getElementById(key);
+                if (element) {
+                    if (element.type === 'checkbox') {
+                        element.checked = settings[key];
+                    } else {
+                        element.value = settings[key];
+                    }
+                }
+            });
+        }
+
+        // 绑定事件监听器
+        function bindEventListeners() {
+            // 开关切换事件
+            document.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
+                checkbox.addEventListener('change', function() {
+                    handleSwitchChange(this.id, this.checked);
+                });
+            });
+
+            // 输入框变化事件
+            document.querySelectorAll('.form-input, .form-textarea, .form-select').forEach(input => {
+                input.addEventListener('change', function() {
+                    handleInputChange(this.id, this.value);
+                });
+            });
+        }
+
+        // 处理开关变化
+        function handleSwitchChange(switchId, isEnabled) {
+            console.log(`功能开关 ${switchId} ${isEnabled ? '已启用' : '已禁用'}`);
+            
+            // 特殊处理某些开关
+            if (switchId === 'enableEmail' && !isEnabled) {
+                // 如果禁用邮件服务，提示用户影响
+                if (!confirm('禁用邮件服务将影响验证码发送和通知功能，确定要禁用吗？')) {
+                    document.getElementById(switchId).checked = true;
+                    return;
+                }
+            }
+            
+            // 更新相关状态
+            updateFeatureStatus(switchId, isEnabled);
+        }
+
+        // 处理输入变化
+        function handleInputChange(inputId, value) {
+            console.log(`配置项 ${inputId} 已更改为: ${value}`);
+            
+            // 验证输入值
+            if (!validateInput(inputId, value)) {
+                return;
+            }
+            
+            // 标记配置已更改
+            markConfigurationChanged();
+        }
+
+        // 验证输入值
+        function validateInput(inputId, value) {
+            switch (inputId) {
+                case 'sessionTimeout':
+                    if (value < 5 || value > 1440) {
+                        showNotification('会话超时时间必须在5-1440分钟之间', 'error');
+                        return false;
+                    }
+                    break;
+                case 'smtpPort':
+                    if (value < 1 || value > 65535) {
+                        showNotification('SMTP端口必须在1-65535之间', 'error');
+                        return false;
+                    }
+                    break;
+                case 'monitoringRetentionDays':
+                    if (value < 1 || value > 365) {
+                        showNotification('监控数据保留天数必须在1-365天之间', 'error');
+                        return false;
+                    }
+                    break;
+            }
+            return true;
+        }
+
+        // 初始化表单验证
+        function initializeValidation() {
+            // 实时验证邮箱格式
+            document.querySelectorAll('input[type="email"]').forEach(emailInput => {
+                emailInput.addEventListener('blur', function() {
+                    if (this.value && !isValidEmail(this.value)) {
+                        this.style.borderColor = '#ef4444';
+                        showNotification('请输入有效的邮箱地址', 'error');
+                    } else {
+                        this.style.borderColor = '#e5e7eb';
+                    }
+                });
+            });
+        }
+
+        // 验证邮箱格式
+        function isValidEmail(email) {
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            return emailRegex.test(email);
+        }
+
+        // 更新功能状态
+        function updateFeatureStatus(featureId, isEnabled) {
+            // 这里可以发送API请求更新后端配置
+            console.log(`更新功能状态: ${featureId} = ${isEnabled}`);
+        }
+
+        // 标记配置已更改
+        function markConfigurationChanged() {
+            // 更新操作栏信息
+            const actionsInfo = document.querySelector('.actions-info span');
+            if (actionsInfo) {
+                actionsInfo.textContent = '配置已更改，请保存设置';
+                actionsInfo.style.color = '#d97706';
+            }
+        }
+
+        // 保存设置
+        async function saveSettings() {
+            try {
+                showLoadingState(true);
+                
+                // 收集所有设置
+                const settings = collectAllSettings();
+                
+                // 验证设置
+                if (!validateAllSettings(settings)) {
+                    return;
+                }
+                
+                // 模拟API请求
+                await simulateApiRequest('/admin/api/settings', 'PUT', settings);
+                
+                // 保存到本地存储
+                localStorage.setItem('authServiceSettings', JSON.stringify(settings));
+                
+                // 显示成功消息
+                showNotification('配置保存成功！', 'success');
+                
+                // 重置更改标记
+                resetChangeMarker();
+                
+            } catch (error) {
+                console.error('保存设置失败:', error);
+                showNotification('保存设置失败，请重试', 'error');
+            } finally {
+                showLoadingState(false);
+            }
+        }
+
+        // 收集所有设置
+        function collectAllSettings() {
+            const settings = {};
+            
+            // 收集所有输入框的值
+            document.querySelectorAll('.form-input, .form-textarea, .form-select').forEach(input => {
+                if (input.id) {
+                    settings[input.id] = input.value;
+                }
+            });
+            
+            // 收集所有开关的状态
+            document.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
+                if (checkbox.id) {
+                    settings[checkbox.id] = checkbox.checked;
+                }
+            });
+            
+            return settings;
+        }
+
+        // 验证所有设置
+        function validateAllSettings(settings) {
+            // 验证必填项
+            const requiredFields = ['appName', 'smtpHost', 'fromEmail'];
+            for (const field of requiredFields) {
+                if (!settings[field] || settings[field].trim() === '') {
+                    showNotification(`${getFieldLabel(field)} 不能为空`, 'error');
+                    return false;
+                }
+            }
+            
+            // 验证邮箱格式
+            const emailFields = ['fromEmail', 'alertEmail'];
+            for (const field of emailFields) {
+                if (settings[field] && !isValidEmail(settings[field])) {
+                    showNotification(`${getFieldLabel(field)} 格式不正确`, 'error');
+                    return false;
+                }
+            }
+            
+            return true;
+        }
+
+        // 获取字段标签
+        function getFieldLabel(fieldId) {
+            const labels = {
+                'appName': '应用名称',
+                'smtpHost': 'SMTP服务器',
+                'fromEmail': '发件人邮箱',
+                'alertEmail': '告警邮箱'
+            };
+            return labels[fieldId] || fieldId;
+        }
+
+        // 重置设置
+        async function resetSettings() {
+            if (!confirm('确定要重置所有设置为默认值吗？此操作不可撤销。')) {
+                return;
+            }
+            
+            try {
+                showLoadingState(true);
+                
+                // 模拟API请求
+                await simulateApiRequest('/admin/api/settings/reset', 'POST');
+                
+                // 清除本地存储
+                localStorage.removeItem('authServiceSettings');
+                
+                // 重新加载页面
+                location.reload();
+                
+            } catch (error) {
+                console.error('重置设置失败:', error);
+                showNotification('重置设置失败，请重试', 'error');
+            } finally {
+                showLoadingState(false);
+            }
+        }
+
+        // 重置更改标记
+        function resetChangeMarker() {
+            const actionsInfo = document.querySelector('.actions-info span');
+            if (actionsInfo) {
+                const now = new Date();
+                actionsInfo.textContent = `最后更新：${now.toLocaleDateString('zh-CN')} ${now.toLocaleTimeString('zh-CN', {hour: '2-digit', minute: '2-digit'})}`;
+                actionsInfo.style.color = '#6b7280';
+            }
+        }
+
+        // 显示加载状态
+        function showLoadingState(isLoading) {
+            const saveBtn = document.querySelector('.btn-primary');
+            const resetBtn = document.querySelector('.btn-secondary');
+            
+            if (isLoading) {
+                saveBtn.disabled = true;
+                saveBtn.innerHTML = '<svg class="btn-icon animate-spin" fill="currentColor" viewBox="0 0 24 24"><path d="M12,4V2A10,10 0 0,0 2,12H4A8,8 0 0,1 12,4Z"/></svg>保存中...';
+                resetBtn.disabled = true;
+            } else {
+                saveBtn.disabled = false;
+                saveBtn.innerHTML = '<svg class="btn-icon" fill="currentColor" viewBox="0 0 24 24"><path d="M15,9H5V5H15M12,19A3,3 0 0,1 9,16A3,3 0 0,1 12,13A3,3 0 0,1 15,16A3,3 0 0,1 12,19M17,3H5C3.89,3 3,3.9 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V7L17,3Z"/></svg>保存配置';
+                resetBtn.disabled = false;
+            }
+        }
+
+        // 模拟API请求
+        function simulateApiRequest(url, method, data = null) {
+            return new Promise((resolve, reject) => {
+                setTimeout(() => {
+                    // 模拟90%成功率
+                    if (Math.random() > 0.1) {
+                        resolve({ success: true, data });
+                    } else {
+                        reject(new Error('网络请求失败'));
+                    }
+                }, 1000 + Math.random() * 1000); // 1-2秒延迟
+            });
+        }
+
+        // 显示通知消息
+        function showNotification(message, type = 'success') {
+            const notification = document.getElementById('notification');
+            const messageElement = document.getElementById('notificationMessage');
+            
+            messageElement.textContent = message;
+            notification.className = `notification notification-${type}`;
+            notification.classList.add('show');
+            
+            setTimeout(() => {
+                notification.classList.remove('show');
+            }, 3000);
+        }
+
+        // 添加旋转动画样式
+        const style = document.createElement('style');
+        style.textContent = `
+            .animate-spin {
+                animation: spin 1s linear infinite;
+            }
+            @keyframes spin {
+                from { transform: rotate(0deg); }
+                to { transform: rotate(360deg); }
+            }
+        `;
+        document.head.appendChild(style);
+    </script>
+</body>
+</html>

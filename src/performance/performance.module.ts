@@ -2,6 +2,7 @@ import { Module, forwardRef } from '@nestjs/common';
 import { CachingService } from './caching.service';
 import { DatabaseOptimizationService } from './database-optimization.service';
 import { ConcurrencyService } from './concurrency.service';
+import { BenchmarkService } from './benchmark.service';
 import { PerformanceController } from './performance.controller';
 import { DatabaseModule } from '../database/database.module';
 import { RedisModule } from '../redis/redis.module';
@@ -21,12 +22,14 @@ import { AuthModule } from '../auth/auth.module';
     CachingService,
     DatabaseOptimizationService,
     ConcurrencyService,
+    BenchmarkService,
   ],
   controllers: [PerformanceController],
   exports: [
     CachingService,
     DatabaseOptimizationService,
     ConcurrencyService,
+    BenchmarkService,
   ],
 })
 export class PerformanceModule {}

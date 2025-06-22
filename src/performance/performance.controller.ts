@@ -12,6 +12,7 @@ import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagg
 import { CachingService } from './caching.service';
 import { DatabaseOptimizationService } from './database-optimization.service';
 import { ConcurrencyService } from './concurrency.service';
+import { BenchmarkService } from './benchmark.service';
 import { AdminGuard } from '../auth/guards/admin.guard';
 
 @ApiTags('性能优化')
@@ -23,6 +24,7 @@ export class PerformanceController {
     private readonly cachingService: CachingService,
     private readonly databaseOptimizationService: DatabaseOptimizationService,
     private readonly concurrencyService: ConcurrencyService,
+    private readonly benchmarkService: BenchmarkService,
   ) {}
 
   @Get('stats')
@@ -283,6 +285,16 @@ export class PerformanceController {
   @ApiOperation({ summary: '运行性能基准测试' })
   @ApiResponse({ status: 200, description: '返回基准测试结果' })
   async runBenchmarks(@Query('type') type?: string) {
+    if (type === 'comprehensive') {
+      // 运行完整的基准测试套件
+      const suite = await this.benchmarkService.runBenchmarkSuite();
+      return {
+        success: true,
+        data: suite,
+      };
+    }
+
+    // 运行简化的基准测试 (保持向后兼容)
     const benchmarks: any = {};
 
     if (!type || type === 'cache') {
@@ -357,6 +369,35 @@ export class PerformanceController {
         benchmarks,
         timestamp: new Date(),
       },
+    };
+  }
+
+  @Get('benchmarks/history')
+  @ApiOperation({ summary: '获取历史基准测试结果' })
+  @ApiResponse({ status: 200, description: '返回历史基准测试数据' })
+  async getBenchmarkHistory(@Query('limit') limit?: string) {
+    const limitNum = limit ? parseInt(limit, 10) : 10;
+    const history = await this.benchmarkService.getHistoricalBenchmarks(limitNum);
+    
+    return {
+      success: true,
+      data: {
+        benchmarks: history,
+        count: history.length,
+      },
+    };
+  }
+
+  @Post('benchmarks/run')
+  @ApiOperation({ summary: '运行完整基准测试套件' })
+  @ApiResponse({ status: 200, description: '返回完整基准测试结果' })
+  async runComprehensiveBenchmarks() {
+    const suite = await this.benchmarkService.runBenchmarkSuite();
+    
+    return {
+      success: true,
+      data: suite,
+      message: '基准测试套件运行完成',
     };
   }
 }
